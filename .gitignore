@@ -1,0 +1,73 @@
+# ── 数据文件（体积大，不入库）──────────────────────────────
+data/raw/
+data/processed/
+data/interim/
+*.h5
+*.TIF
+*.tif
+*.pbf
+*.parquet
+*.pdf
+
+# ── 模型权重与检查点 ────────────────────────────────────────
+outputs/checkpoints/
+outputs/models/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# ── 敏感信息（绝对不能提交）────────────────────────────────
+.env
+*.key
+secrets/
+
+# ── Python ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── 虚拟环境 ────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Jupyter ─────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# ── 实验追踪 ────────────────────────────────────────────────
+mlruns/
+.mlflow/
+wandb/
+lightning_logs/
+
+# ── 日志 ────────────────────────────────────────────────────
+*.log
+logs/
+tensorboard_logs/
+
+# ── OS 产生的文件 ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*:Zone.Identifier
+
+# ── IDE ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── 临时 / 缓存 ─────────────────────────────────────────────
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tmp/
+temp/
