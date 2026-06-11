@@ -62,16 +62,9 @@ pip install pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv \
 pip install torch-scatter torch-sparse \
     -f $PYG_URL -q 2>/dev/null || true
 
-# 安装 DGL
-echo "[5/7] 安装 DGL ..."
-if [ "$CUDA_TAG" = "cpu" ]; then
-    pip install dgl -f https://data.dgl.ai/wheels/repo.html -q 2>/dev/null || pip install dgl -q
-elif [ "$CUDA_TAG" = "cu128" ]; then
-    # DGL cu128 轮子：优先尝试官方，回退到通用
-    pip install dgl -f https://data.dgl.ai/wheels/torch-2.1/cu121/repo.html -q 2>/dev/null || pip install dgl -q
-else
-    pip install dgl -f https://data.dgl.ai/wheels/torch-2.0/${CUDA_TAG}/repo.html -q 2>/dev/null || pip install dgl -q
-fi
+# 安装 DGL（可选，cu128 无预编译 wheel，暂跳过）
+echo "[5/7] DGL 跳过（cu128 无官方 wheel，项目主要使用 PyTorch Geometric）..."
+# 如需手动安装 CPU 版：pip install dgl -f https://data.dgl.ai/wheels/repo.html
 
 # 安装地理 + 数据科学 + 深度学习依赖
 echo "[6/7] 安装其他依赖 ..."

@@ -28,7 +28,7 @@
 
 ## 技术栈
 
-- **深度学习**：PyTorch 2.11+cu128、PyTorch Geometric、DGL
+- **深度学习**：PyTorch 2.11+cu128、PyTorch Geometric（DGL 因 cu128 无预编译 wheel 已跳过）
 - **模型**：STGCN → STAEformer → Spacetimeformer（渐进式）
 - **地理处理**：GeoPandas、Rasterio、osmium、pyproj
 - **异常检测**：PyOD、VAE、AnomalyTransformer

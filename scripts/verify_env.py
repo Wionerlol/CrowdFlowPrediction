@@ -48,7 +48,7 @@ check("PyTorch Geometric", check_pyg)
 def check_dgl():
     import dgl
     return f"dgl {dgl.__version__}"
-check("DGL", check_dgl)
+check("DGL", check_dgl, required=False)
 
 def check_transformers():
     import transformers
