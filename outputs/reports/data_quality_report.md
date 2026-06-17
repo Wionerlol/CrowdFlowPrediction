@@ -184,12 +184,17 @@ ts = pd.Timestamp(date_part) + pd.Timedelta(minutes=30*(step-1))
 
 ## 六、OpenStreetMap
 
-| 城市 | 文件大小 | 格式 | 内容 |
-|------|---------|------|------|
-| 北京 | 36.1 MB | OSM PBF | 道路、POI、建筑、行政边界 |
-| 纽约 | 30.7 MB | OSM PBF | 曼哈顿及周边道路、POI |
+| 城市 | 文件大小 | 格式 | 来源 | 状态 |
+|------|---------|------|------|------|
+| 北京 | 36.1 MB | OSM PBF | Geofabrik | ✅ 完整 |
+| 纽约 | 151 MB | OSM PBF | BBBike | ✅ 完整（初始下载 30.7MB 文件损坏） |
 
-文件完整，可通过 `osmium` 库解析提取兴趣点（POI）、路网拓扑用于图构建。
+> **纽约 OSM 文件问题记录**：初次从 Geofabrik 下载的文件仅 30.7MB，OSM PBF 格式中 Node 块先于 Way 块存储，截断文件导致 Node（POI 位置）可正常解析但 Way（道路几何）完全缺失，最终路网密度全部为 0。问题排查后从 BBBike 重新下载完整 151MB 文件，提取道路 114,938 条、功能性 POI 21,144 个、地铁站 238 个、地铁入口 1,153 个，均恢复正常。
+
+通过 `osmium` 库解析，已提取以下特征：
+- 路网密度（5类道路，UTM 投影精确计算长度）
+- 功能性 POI（11类，transport 类已剥离独立建模）
+- 公共交通：地铁站（`station=subway`）、地铁入口（`railway=subway_entrance`）、公交站（`highway=bus_stop`）
 
 ---
 

@@ -7,7 +7,7 @@
   data/processed/graph_flow_{city}.pt      — G_flow:    Pearson流量相关图
   data/processed/node_features_{city}.npy  — 节点静态特征 (N, F)
 
-节点特征维度（共 37 维）：
+节点特征维度（共 38 维）：
   [0:4]   地理位置  : lat_norm, lon_norm, dist_center_norm, ring_id(1~5)
   [4:6]   到枢纽/商圈距离 : dist_hub_min_norm, dist_com_min_norm
   [6:11]  路网特征  : road_density(log1p), highway(log1p), local(log1p),
@@ -17,7 +17,7 @@
   [27:35] 历史统计  : hist_mean_norm, p99_ratio, zero_rate,
                       wd_peak_ratio, we_ratio, night_ratio,
                       flow_dir_norm, flow_cv
-  [35:37] 公共交通  : subway_station_density, subway_entrance_density
+  [35:38] 公共交通  : subway_station_density, subway_entrance_density, bus_stop_density
 
 超参数：
   σ = 1.5 格（空间图高斯带宽）
@@ -311,18 +311,18 @@ def build_node_features(cfg: dict) -> np.ndarray:
     npz = np.load(cfg["flow_npz"], allow_pickle=False)
     hist = _hist_stats(npz["data"], npz["timestamps"], cfg["tz"])      # (N,8)
 
-    # ── [35:37] 公共交通特征 ────────────────────────────────────────────────
+    # ── [35:38] 公共交通特征 ────────────────────────────────────────────────
     transit = pd.read_csv(cfg["transit_csv"], index_col=0).sort_index()
-    tr_cols = ["subway_station_density", "subway_entrance_density"]
+    tr_cols = ["subway_station_density", "subway_entrance_density", "bus_stop_density"]
     tr_raw  = transit[tr_cols].values.astype(np.float32)
     tr_feat = np.log1p(tr_raw)
     tr_feat = (tr_feat - tr_feat.mean(axis=0)) / (tr_feat.std(axis=0) + 1e-8)
-                                                                        # (N,2)
+                                                                        # (N,3)
 
     # ── 拼接 ────────────────────────────────────────────────────────────────
     node_feat = np.concatenate([geo, dist_f, road_feat,
-                                poi_feat, sat_arr, hist, tr_feat], axis=1)  # (N,37)
-    assert node_feat.shape[1] == 37, node_feat.shape
+                                poi_feat, sat_arr, hist, tr_feat], axis=1)  # (N,38)
+    assert node_feat.shape[1] == 38, node_feat.shape
     return node_feat.astype(np.float32)
 
 

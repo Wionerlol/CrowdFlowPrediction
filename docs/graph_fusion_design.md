@@ -156,7 +156,54 @@ hetero_edges   : data/processed/hetero_edges_bj.pt     # dict of edge_index
 
 ---
 
-## 五、实现计划
+## 五、G_transit 扩展方案（可选第四图）
+
+### 5.1 动机
+
+现有三图（G_spatial/G_poi/G_flow）均从静态地理或历史统计角度建模。G_transit 可从**公共交通网络拓扑**角度补充新的连接关系：共享同一地铁线路的格子之间存在强流量关联，这种关联既非地理邻近也非 POI 相似，是现有三图的盲区。
+
+### 5.2 边定义
+
+**方案 T1：地铁线路连接**（主推）
+
+两个格子共享同一地铁线路（即两格内均有属于同一线路的站点），则添加边：
+
+```
+edge(i, j) if ∃ line L: station(i) ∈ L AND station(j) ∈ L
+edge_weight = exp(−hop_distance / σ_t)   # hop_distance = 两站之间的站数
+```
+
+OSM 数据支撑：地铁线路以 `route=subway` 的 relation 存储，包含 member 站点的有序列表。
+
+**方案 T2：多模态站点连接**（可作为 T1 扩展）
+
+在 T1 基础上，将共享自行车租赁站（`amenity=bicycle_rental`）作为软连接：  
+两格距离 ≤ 2km 且均有 bicycle_rental → 加入弱边（权重衰减 × 0.3），反映骑行接驳可达性。
+
+### 5.3 实现路径
+
+```python
+# 需解析 OSM relation（需 osmium way/relation handler）
+class SubwayLineHandler(osmium.SimpleHandler):
+    def relation(self, r):
+        if r.tags.get("route") == "subway":
+            # 收集 member node id（站点）及线路名
+            ...
+```
+
+### 5.4 纳入消融实验
+
+| 实验 | 配置 |
+|------|------|
+| E5（现方案C） | G_spatial + G_poi + G_flow，门控融合 |
+| E7（+G_transit T1） | 四图门控融合 |
+| E8（+G_transit T2） | 四图 + bicycle_rental 软边 |
+
+> **当前状态**：G_transit 为 Week 4+ 选做项，先跑通 E5 再决定是否扩展。
+
+---
+
+## 六、实现计划
 
 | 周次 | 任务 | 产出 |
 |------|------|------|
@@ -167,7 +214,7 @@ hetero_edges   : data/processed/hetero_edges_bj.pt     # dict of edge_index
 
 ---
 
-## 六、消融实验设计（Week 4）
+## 七、消融实验设计（Week 4）
 
 验证方案C中每个图的贡献，以及方案B vs C 的收益：
 
@@ -179,5 +226,7 @@ hetero_edges   : data/processed/hetero_edges_bj.pt     # dict of edge_index
 | E4 | G_spatial + G_poi + G_flow，均值融合 |
 | **E5**（方案C） | G_spatial + G_poi + G_flow，**门控融合** |
 | **E6**（方案B） | HeteroConv（grid + poi节点，3类边） |
+| E7（G_transit T1） | 四图门控融合，加入地铁线路拓扑图 |
+| E8（G_transit T2） | 四图 + bicycle_rental 软边扩展 |
 
 评估指标：TaxiBJ 测试集（BJ16）MAE / RMSE / MAPE，预测步长 1步 / 6步 / 12步。

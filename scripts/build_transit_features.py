@@ -1,16 +1,18 @@
 """
 公共交通特征提取
-从 OSM PBF 提取地铁站和地铁入口，聚合到网格
+从 OSM PBF 提取地铁站、地铁入口和公交站，聚合到网格
 
 输出：
-  data/processed/transit_features_bj.csv   — (1024, 4)
-  data/processed/transit_features_nyc.csv  — (75,   4)
+  data/processed/transit_features_bj.csv   — (1024, 6)
+  data/processed/transit_features_nyc.csv  — (75,   6)
 
 特征列：
   subway_station_count   : 格内地铁站数量  (station=subway)
   subway_station_density : 地铁站数 / 格面积 (个/km²)
   subway_entrance_count  : 格内地铁入口数量 (railway=subway_entrance)
   subway_entrance_density: 地铁入口数 / 格面积 (个/km²)
+  bus_stop_count         : 格内公交站数量  (highway=bus_stop)
+  bus_stop_density       : 公交站数 / 格面积 (个/km²)
 """
 
 import numpy as np
@@ -39,6 +41,7 @@ class TransitExtractor(osmium.SimpleHandler):
         self.lon_min, self.lat_min, self.lon_max, self.lat_max = bbox
         self.stations  = []   # (lon, lat)  station=subway
         self.entrances = []   # (lon, lat)  railway=subway_entrance
+        self.bus_stops = []   # (lon, lat)  highway=bus_stop
 
     def node(self, n):
         if not n.location.valid():
@@ -52,6 +55,8 @@ class TransitExtractor(osmium.SimpleHandler):
             self.stations.append((lon, lat))
         elif tags.get("railway") == "subway_entrance":
             self.entrances.append((lon, lat))
+        elif tags.get("highway") == "bus_stop":
+            self.bus_stops.append((lon, lat))
 
 
 def assign_to_grid(points, grid_meta):
@@ -92,17 +97,21 @@ def process_city(city, pbf_path, bbox, grid_csv, out_name):
 
     print(f"    地铁站 (station=subway): {len(ext.stations)}")
     print(f"    地铁入口 (subway_entrance): {len(ext.entrances)}")
+    print(f"    公交站 (highway=bus_stop): {len(ext.bus_stops)}")
 
     area = grid_meta.set_index("grid_id")["area_km2"]
 
     st_count  = assign_to_grid(ext.stations,  grid_meta).rename("subway_station_count")
     ent_count = assign_to_grid(ext.entrances, grid_meta).rename("subway_entrance_count")
+    bus_count = assign_to_grid(ext.bus_stops, grid_meta).rename("bus_stop_count")
 
     feat = pd.DataFrame({
         "subway_station_count"   : st_count,
         "subway_station_density" : st_count  / area,
         "subway_entrance_count"  : ent_count,
         "subway_entrance_density": ent_count / area,
+        "bus_stop_count"         : bus_count,
+        "bus_stop_density"       : bus_count / area,
     })
 
     out = OUT / out_name
@@ -110,7 +119,8 @@ def process_city(city, pbf_path, bbox, grid_csv, out_name):
     print(f"    已保存: {out_name}  shape={feat.shape}")
     print(f"    格内有地铁站的格数: {(feat.subway_station_count > 0).sum()} / {len(feat)}")
     print(f"    格内有地铁入口的格数: {(feat.subway_entrance_count > 0).sum()} / {len(feat)}")
-    print(f"    地铁站密度均值: {feat.subway_station_density.mean():.3f} 个/km²")
+    print(f"    格内有公交站的格数: {(feat.bus_stop_count > 0).sum()} / {len(feat)}")
+    print(f"    公交站密度均值: {feat.bus_stop_density.mean():.3f} 个/km²")
     return feat
 
 

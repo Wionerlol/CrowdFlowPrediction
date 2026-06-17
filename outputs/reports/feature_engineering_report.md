@@ -12,7 +12,7 @@
 
 | 类别 | 内容 | 维度 | 变化维度 | 文件 |
 |------|------|------|---------|------|
-| **静态节点特征** | 地理位置、路网、POI、遥感、历史统计 | (N, 36) | 仅随空间变化 | `node_features_{city}.npy` |
+| **静态节点特征** | 地理位置、路网、POI、遥感、历史统计、公共交通 | (N, 37) | 仅随空间变化 | `node_features_{city}.npy` |
 | **动态时间特征** | 时刻/星期/月份周期编码、节假日 | (T, 12) | 仅随时间变化 | `temporal_features_{city}.csv` |
 | **动态气象特征** | 温度、风速、降水等 12 维 | (T, 12) | 仅随时间变化（全城统一） | `weather_{city}_merged.csv` |
 
@@ -97,7 +97,7 @@ cos_enc = cos(2π × value / period)
 
 ### 3.3 POI 语义特征
 
-从 OSM PBF 节点提取兴趣点，按 12 个类别分类后聚合到网格：
+从 OSM PBF 节点提取兴趣点，按 **11 个功能性类别**分类后聚合到网格（transport 类已完全剥离，归入公共交通特征，见 3.5 节）：
 
 | 类别 | 北京数量 | 纽约数量 | 主要 OSM Tag |
 |------|---------|---------|-------------|
@@ -108,18 +108,29 @@ cos_enc = cos(2π × value / period)
 | residential | 104 | 28 | building=apartments/residential |
 | education | 251 | 614 | amenity=school/university/college |
 | healthcare | 323 | 1,199 | amenity=hospital/clinic/pharmacy |
-| transport | 23,549 | 7,639 | railway=station, public_transport=* |
 | government | 265 | 137 | amenity=townhall/police/courthouse |
 | tourism | 1,878 | 1,833 | tourism=*, amenity=place_of_interest |
 | sports | 342 | 729 | leisure=sports_centre/stadium/gym |
 | religious | 39 | 334 | amenity=place_of_worship |
-| **合计** | **36,084** | **28,780** | |
+| **合计** | **12,536** | **21,144** | |
 
-每类输出两列：`{cat}_count`（数量）和 `{cat}_density`（个/km²），共 24 列。
+每类输出两列：`{cat}_count`（数量）和 `{cat}_density`（个/km²），共 22 列。
 
-> **注意**：北京交通类 POI 占 65%（地铁/公交站密集），纽约占 27%。此比例在后续 G_poi 图构建时需排除 transport 类，防止相似度退化。
+> **transport 剥离说明**：原北京 transport 类 POI 23,549 条（占 65%），会使所有格对余弦相似度 > 0.99，导致 G_poi 图退化。transport 类已完全从语义 POI 中移除，改由独立的公共交通特征（subway_station_density + subway_entrance_density）建模，与 PDF 原始需求（餐饮/购物/娱乐/办公/住宅）对齐。
 
-### 3.4 遥感特征（Landsat-8）
+### 3.4 公共交通特征（OSM）
+
+从 OSM PBF 提取地铁站（`station=subway`）和地铁入口（`railway=subway_entrance`）节点，独立于 POI 特征进行建模：
+
+| 特征 | 北京 | 纽约 | 归一化 |
+|------|------|------|-------|
+| subway_station_density（个/km²） | 369 站，25% 格覆盖 | 238 站，55% 格覆盖 | log1p + z-score |
+| subway_entrance_density（个/km²） | 983 个入口 | 1,153 个入口 | log1p + z-score |
+| bus_stop_density（个/km²） | 待统计（highway=bus_stop） | 待统计 | log1p + z-score |
+
+三维分工：站数反映地铁线网覆盖，入口数反映换乘通达性，公交站数覆盖地铁盲区的地面公共交通。
+
+### 3.5 遥感特征（Landsat-8）
 
 **数据**：L1TP 级别 DN 值，使用 MTL.txt 校正参数转换为 TOA（大气层顶）反射率：
 
@@ -151,18 +162,19 @@ cos_enc = cos(2π × value / period)
 
 ### 4.1 特征拼接规格
 
-将上述所有静态特征合并为每节点 36 维向量：
+将上述所有静态特征合并为每节点 **38 维**向量：
 
 | 索引 | 分组 | 维度 | 归一化方式 |
 |------|------|------|----------|
 | [0:4] | 地理位置 | 4 | lat/lon/dist_center: min-max；ring_id: 1~5 → /5 |
 | [4:6] | 到枢纽/商圈最短距离 | 2 | min-max [0,1] |
 | [6:11] | 路网密度（5类） | 5 | log1p 后 z-score |
-| [11:23] | POI 密度（12类） | 12 | log1p 后 z-score |
-| [23:28] | 遥感指数 | 5 | z-score |
-| [28:36] | 历史流量统计 | 8 | 见下表 |
+| [11:22] | POI 密度（11类） | 11 | log1p 后 z-score |
+| [22:27] | 遥感指数 | 5 | z-score |
+| [27:35] | 历史流量统计 | 8 | 见下表 |
+| [35:38] | 公共交通密度（地铁站/入口/公交站） | 3 | log1p 后 z-score |
 
-**历史统计特征（[28:36]）：**
+**历史统计特征（[27:35]）：**
 
 | 特征 | 计算方式 | 归一化 |
 |------|---------|-------|
@@ -179,8 +191,8 @@ cos_enc = cos(2π × value / period)
 
 | 文件 | 规格 | NaN |
 |------|------|-----|
-| `node_features_bj.npy` | (1024, 36) float32 | 0 |
-| `node_features_nyc.npy` | (75, 36) float32 | 0 |
+| `node_features_bj.npy` | (1024, 38) float32 | 待重跑 |
+| `node_features_nyc.npy` | (75, 38) float32 | 待重跑 |
 
 ---
 
@@ -207,7 +219,7 @@ w(i,j) = exp(−d(i,j)² / σ²)，σ = 1.5 格
 
 **构建方式**：POI 类别密度向量余弦相似度，top-k kNN（k=10）
 
-**关键设计决策**：北京交通类 POI 占 65%，若将其纳入相似度计算，几乎所有格对余弦相似度 > 0.99，图退化为完全图。解决方案：排除 transport 类别，使用其余 11 类计算相似度，保留 10 个最相似的邻居。
+**关键设计决策**：transport 类已在特征工程阶段完全剥离（不进入 POI 特征矩阵），G_poi 直接使用全部 11 类功能 POI 向量计算余弦相似度，保留 10 个最相似邻居。
 
 特征向量处理：`log1p(密度)` → L2 归一化 → 余弦相似度。
 
@@ -263,7 +275,6 @@ corr(i,j) = (X_i − μ_i)/σ_i · (X_j − μ_j)/σ_j / T
 | 空间图带宽 σ | 1.5 格 | 控制距离衰减速率 | 试 1.0, 2.0 |
 | POI kNN k | 10 | 每节点 POI 邻居数 | 试 5, 20 |
 | Flow kNN k | 15 | 每节点流量邻居数 | 试 10, 20 |
-| POI 排除类别 | transport | 防止主导类别使图退化 | 也可用 log1p+L2 均衡后不排除 |
 
 ---
 
@@ -275,12 +286,14 @@ data/processed/
 ├── temporal_features_nyc.csv    (17520, 12)  纽约时间特征
 ├── spatial_features_bj.csv      (1024,  16)  北京空间距离+路网
 ├── spatial_features_nyc.csv     (75,    16)  纽约空间距离+路网
-├── poi_features_bj.csv          (1024,  24)  北京 POI（12类×count+density）
-├── poi_features_nyc.csv         (75,    24)  纽约 POI
+├── poi_features_bj.csv          (1024,  22)  北京 POI（11类×count+density）
+├── poi_features_nyc.csv         (75,    22)  纽约 POI
 ├── satellite_features_bj.csv    (1024,   5)  北京遥感指数
 ├── satellite_features_nyc.csv   (75,     5)  纽约遥感指数
-├── node_features_bj.npy         (1024,  36)  北京节点静态特征矩阵
-├── node_features_nyc.npy        (75,    36)  纽约节点静态特征矩阵
+├── transit_features_bj.csv      (1024,   6)  北京公共交通（地铁站/入口/公交站 ×count+density）
+├── transit_features_nyc.csv     (75,     6)  纽约公共交通
+├── node_features_bj.npy         (1024,  38)  北京节点静态特征矩阵（待重跑）
+├── node_features_nyc.npy        (75,    38)  纽约节点静态特征矩阵（待重跑）
 ├── graph_spatial_bj.pt          edges=7812   北京空间邻接图
 ├── graph_poi_bj.pt              edges=10240  北京 POI 语义图
 ├── graph_flow_bj.pt             edges=15255  北京流量相关图
@@ -298,5 +311,5 @@ data/processed/
 | 网格粒度 | 北京/纽约格子尺寸 1.3~3.2 km，远大于 500m 目标 | 细粒度空间模式无法捕捉 |
 | NYC路网 | 初始下载文件损坏（30MB，EOF），补下后恢复正常 | 已解决 |
 | Landsat-8 单期 | 仅用单一时相卫星影像，无法反映季节变化 | 遥感特征为春季快照 |
-| G_poi transport | 北京交通类 POI 主导，排除后图结构合理但损失一维信息 | 后续可用 log1p 均衡替代排除 |
+| G_poi transport | 北京交通类 POI 主导，已完全剥离出 POI 特征，以独立公共交通特征代替 | 剥离后 POI 11类语义清晰，图结构合理 |
 | METR-LA DST | 洛杉矶夏令时统一按 UTC-8 处理，边界处约 1h 误差 | 仅影响跨 DST 切换的约 96 个时步 |

@@ -1,6 +1,6 @@
 # 异常检测规格文档
 
-**版本**: v1.0  
+**版本**: v1.1  
 **日期**: 2026-06-13  
 **适用数据集**: TaxiBJ（主）、TaxiNYC（泛化验证）
 
@@ -137,7 +137,44 @@ def detect_anomaly_clusters(flow_t, slot_idx, z_thresh=3.0, min_cells=6):
 
 ---
 
-## 五、异常类型分类
+## 五、停车场密度对异常阈值的影响（待消融验证）
+
+### 5.1 观测假设
+
+停车场密集区域（`amenity=parking` 密度高）以私家车为主要出行方式，其流量模式与公共交通主导区域有系统性差异：
+
+| 区域类型 | 工作日模式 | 周末模式 | 典型区域 |
+|---------|----------|---------|---------|
+| 高停车场密度（私家车主导） | 早高峰较弱，全天较均匀 | 购物/娱乐高峰显著，周末/工作日比 > 1.5 | 郊区商场、大型停车场周边 |
+| 低停车场密度（公共交通主导） | 早晚高峰双峰明显 | 周末流量下降（通勤人群减少） | 地铁密集的中心城区 |
+
+### 5.2 对 Z-score 阈值的影响
+
+时槽归一化（slot_mu/slot_sig）已按历史同时槽计算，能部分吸收工作日/周末的系统差异。但对高停车场密度区域，周末流量历史方差更大（购物/活动随机性高），同等 Z-score 对应的"异常程度"更高，误报风险上升。
+
+**建议**（Week 5 消融验证）：
+
+```python
+# 方案：对高停车场密度格子使用更高的 L1/L2 阈值
+HIGH_PARKING_MASK = parking_density > parking_density_threshold  # 待确定分位数
+
+# 差异化阈值配置（待消融）
+z_thresh_l2 = np.where(HIGH_PARKING_MASK, 3.5, 3.0)   # L2 中度告警
+z_thresh_l3 = np.where(HIGH_PARKING_MASK, 4.0, 3.5)   # L3 重度告警
+```
+
+### 5.3 消融实验设计
+
+| 实验 | 配置 | 评估指标 |
+|------|------|---------|
+| A-base | 全局统一阈值（现行方案） | Precision / Recall on Level-A labels |
+| A-park | 停车场密度分层阈值 | 同上，对比 False Positive Rate 降低幅度 |
+
+> 停车场密度数据来源：从 OSM PBF 提取 `amenity=parking` 节点，与 `parking_density` 列存入 `transit_features_{city}.csv` 或单独 `parking_features_{city}.csv`（待决定）。
+
+---
+
+## 六、异常类型分类
 
 基于空间形态和时间模式，预定义三种异常类型：
 
