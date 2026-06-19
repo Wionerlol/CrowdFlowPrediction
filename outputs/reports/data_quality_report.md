@@ -5,6 +5,18 @@
 
 ---
 
+## 数据规模说明
+
+| 分类 | 大小 | 说明 |
+|------|------|------|
+| data/raw/ | 3.6 GB | 原始数据（含 Landsat-8 2.3GB、METR-LA 0.2GB、OSM 0.2GB、taxi 0.4GB、MTA GTFS 0.5GB 等） |
+| data/processed/ | 100 MB | 全部预处理产物（npz/csv/pt/npy，共 37 个文件） |
+| **合计** | **~3.7 GB** | |
+
+> **关于 PDF 中"约 20GB"的说明**：课题文档中对预处理数据集的规模估计为约 20GB，该估计基于原始出租车 GPS 轨迹数据（逐条行程记录）。本项目使用的 TaxiBJ / TaxiNYC 为官方预聚合网格格式（已将原始轨迹聚合为 32×32 / 15×5 网格的 inflow/outflow 计数），数据量远小于原始轨迹。这是数据选型的差异，不影响特征工程和模型训练的完整性。
+
+---
+
 ## 总体评估
 
 | 数据集 | 完整性 | 可用性 | 主要问题 |
@@ -20,6 +32,8 @@
 | OSM 北京/纽约 | ✅ 完整 | 高 | 需解析提取 POI、路网 |
 | Landsat-8 北京 | ✅ 完整 | 高 | 单景静态特征，2015-04-16 |
 | Landsat-8 纽约 | ✅ 完整 | 高 | 单景静态特征，2014-04-10，与 TaxiNYC 同年 |
+| 北京交通政府数据 | ✅ 完整 | 高 | 2026年最新数据，与TaxiBJ（2013-2016）存在时间差，新线路在bbox外 |
+| MTA GTFS（纽约公交） | ✅ 完整 | 高 | 5区分包，route_type=3/711，100%站点覆盖 |
 
 ---
 
@@ -198,7 +212,40 @@ ts = pd.Timestamp(date_part) + pd.Timedelta(minutes=30*(step-1))
 
 ---
 
-## 七、NASA Landsat-8 卫星影像
+## 七、政府交通数据与 MTA GTFS
+
+### 7.1 北京市交通委政府数据（data/raw/jtw_beijing_gov/）
+
+| 文件 | 行数 | 关键字段 | 用途 |
+|------|------|---------|------|
+| 轨道线路信息.xlsx | 18条线路 | 线路名称 | 线路枚举 |
+| 轨道站点信息.xlsx | 1,079条（342站） | 车站名称、行车方向、首班车时间 | 站名匹配 → num_subway_lines、G_transit |
+| 公交线路信息.xlsx | 1,165条 | 线路名称 | 线路枚举 |
+| 公交站点信息.xlsx | 58,697条（9,416唯一站名） | 线路名称、站点名称 | 补全OSM未关联公交站 |
+| 路侧停车位基础信息.xlsx | 1,718条 | 停车位位置 | 未使用（数据不完整，对出租车流量解释力弱） |
+| 公租自行车停车位基础信息.xlsx | — | 站点位置 | 未使用（记录为G_transit扩展方向） |
+
+> **时间说明**：政府数据为2026年最新版本，TaxiBJ为2013-2016年数据。2013年后新建地铁线路（S1线2017年、燕房线2017年、大兴机场线2019年）地理位置均在TaxiBJ bbox范围外，对特征计算影响可忽略。
+
+**站名匹配结果**：OSM地铁站名 → 政府轨道站点，精确+模糊匹配（阈值0.80），成功率 940/1079（87.1%）；未匹配的139条记录多为bbox外的郊区站点（黄村、义和庄等）。
+
+### 7.2 MTA GTFS 纽约公交数据（data/raw/mta_gtfs/）
+
+| 子目录 | 覆盖区 | 路线数（type=3） | bbox内站点数 |
+|--------|--------|---------------|-----------|
+| gtfs_subway/ | 全市地铁 | 28条（type=1） | — |
+| gtfs_bus/gtfs_b/ | Brooklyn | 255 | 648 |
+| gtfs_bus/gtfs_bx/ | Bronx | 255 | 656 |
+| gtfs_bus/gtfs_m/ | Manhattan | 255 | 1,813 |
+| gtfs_bus/gtfs_q/ | Queens | 255 | 27 |
+| gtfs_bus/gtfs_si/ | Staten Island | 255 | 156 |
+| **合计（去重）** | 全市 | **255** | **3,168** |
+
+> routes.txt 在5个区GTFS中内容相同（同一套全市线路），stop_times.txt各区独立。使用分块读取（chunksize=200,000）处理大文件（最大 ~141MB stop_times.txt）。
+
+---
+
+## 八、NASA Landsat-8 卫星影像
 
 ### 7.1 北京场景（LC08_L1TP_123032_20150416）
 
@@ -237,17 +284,22 @@ ts = pd.Timestamp(date_part) + pd.Timedelta(minutes=30*(step-1))
 
 ## 八、数据预处理优先级与建议
 
-### Week 2 预处理重点
+### Week 2 预处理完成情况
 
-| 优先级 | 任务 | 涉及数据 |
-|--------|------|---------|
-| P0 | TaxiBJ 四段时间对齐与拼接策略 | `taxibj/*.h5` |
-| P0 | OpenWeatherMap 时间戳解析、缺失字段丢弃、插值到 30 分钟 | `openweather/*.csv` |
-| P1 | TaxiNYC 气象温度单位转换（°F → °C） | `taxinyc/Meteorology.h5` |
-| P1 | OSM POI 提取与 32×32 / 15×5 网格聚合 | `osm/*.pbf` |
-| P1 | Landsat-8 DN → 反射率转换，计算 NDVI/NDBI | `Landsat8_*/B*.TIF` |
-| P2 | ERA5 + OpenWeatherMap 字段合并，构建统一气象特征矩阵 | `weather/*.h5` + `openweather/*.csv` |
-| P2 | METR-LA parquet 格式解析，提取时序矩阵 `(T, N, F)` | `metr_la/*.parquet` |
+| 状态 | 任务 | 涉及数据 |
+|------|------|---------|
+| ✅ | TaxiBJ 四段时间对齐与拼接 | `taxibj/*.h5` |
+| ✅ | OpenWeatherMap 时间戳解析、缺失字段丢弃、插值到 30 分钟 | `openweather/*.csv` |
+| ✅ | TaxiNYC 气象温度单位转换（°F → °C） | `taxinyc/Meteorology.h5` |
+| ✅ | OSM POI 提取与 32×32 / 15×5 网格聚合（11类功能POI） | `osm/*.pbf` |
+| ✅ | Landsat-8 DN → 反射率转换，NDVI/NDBI/MNDWI 计算 | `Landsat8_*/B*.TIF` |
+| ✅ | ERA5 + OpenWeatherMap 字段合并，30 分钟气象特征矩阵 | `weather/*.h5` + `openweather/*.csv` |
+| ✅ | METR-LA parquet 格式解析 | `metr_la/*.parquet` |
+| ✅ | 公共交通特征提取（地铁站/入口/公交站密度，3维） | OSM PBF |
+| ✅ | 轨道线路特征（num_subway_lines, is_transfer_hub，2维） | 政府xlsx + OSM PBF |
+| ✅ | 公交线路特征（num_bus_routes，1维） | OSM + MTA GTFS |
+| ✅ | 多模态图构建（G_spatial/G_poi/G_flow/G_transit） | 各中间特征文件 |
+| ✅ | 节点特征矩阵合并（N×41，NaN=0） | `build_graphs.py` |
 
 ### 关键对齐问题
 

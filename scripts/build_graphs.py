@@ -7,7 +7,7 @@
   data/processed/graph_flow_{city}.pt      — G_flow:    Pearson流量相关图
   data/processed/node_features_{city}.npy  — 节点静态特征 (N, F)
 
-节点特征维度（共 38 维）：
+节点特征维度（共 41 维）：
   [0:4]   地理位置  : lat_norm, lon_norm, dist_center_norm, ring_id(1~5)
   [4:6]   到枢纽/商圈距离 : dist_hub_min_norm, dist_com_min_norm
   [6:11]  路网特征  : road_density(log1p), highway(log1p), local(log1p),
@@ -18,6 +18,8 @@
                       wd_peak_ratio, we_ratio, night_ratio,
                       flow_dir_norm, flow_cv
   [35:38] 公共交通  : subway_station_density, subway_entrance_density, bus_stop_density
+  [38:40] 轨道线路  : num_subway_lines(log1p), is_transfer_hub
+  [40]    公交线路  : num_bus_routes(log1p)
 
 超参数：
   σ = 1.5 格（空间图高斯带宽）
@@ -58,6 +60,9 @@ CITIES = {
         "poi_csv"      : PROC / "poi_features_bj.csv",
         "satellite_csv": PROC / "satellite_features_bj.csv",
         "transit_csv"  : PROC / "transit_features_bj.csv",
+        "subway_feat_csv": PROC / "subway_grid_features_bj.csv",
+        "bus_feat_csv"   : PROC / "bus_route_features_bj.csv",
+        "transit_graph"  : PROC / "graph_transit_bj.pt",
     },
     "nyc": {
         "H": 15, "W": 5, "tz": -5,
@@ -69,6 +74,9 @@ CITIES = {
         "poi_csv"      : PROC / "poi_features_nyc.csv",
         "satellite_csv": PROC / "satellite_features_nyc.csv",
         "transit_csv"  : PROC / "transit_features_nyc.csv",
+        "subway_feat_csv": PROC / "subway_grid_features_nyc.csv",
+        "bus_feat_csv"   : PROC / "bus_route_features_nyc.csv",
+        "transit_graph"  : PROC / "graph_transit_nyc.pt",
     },
 }
 
@@ -311,7 +319,7 @@ def build_node_features(cfg: dict) -> np.ndarray:
     npz = np.load(cfg["flow_npz"], allow_pickle=False)
     hist = _hist_stats(npz["data"], npz["timestamps"], cfg["tz"])      # (N,8)
 
-    # ── [35:38] 公共交通特征 ────────────────────────────────────────────────
+    # ── [35:38] 公共交通特征（密度）────────────────────────────────────────
     transit = pd.read_csv(cfg["transit_csv"], index_col=0).sort_index()
     tr_cols = ["subway_station_density", "subway_entrance_density", "bus_stop_density"]
     tr_raw  = transit[tr_cols].values.astype(np.float32)
@@ -319,10 +327,24 @@ def build_node_features(cfg: dict) -> np.ndarray:
     tr_feat = (tr_feat - tr_feat.mean(axis=0)) / (tr_feat.std(axis=0) + 1e-8)
                                                                         # (N,3)
 
+    # ── [38:40] 轨道线路特征 ───────────────────────────────────────────────
+    sub_df  = pd.read_csv(cfg["subway_feat_csv"], index_col=0).sort_index()
+    sub_raw = sub_df[["num_subway_lines", "is_transfer_hub"]].values.astype(np.float32)
+    sub_feat = np.stack([
+        np.log1p(sub_raw[:, 0]),   # num_subway_lines: log1p
+        sub_raw[:, 1],             # is_transfer_hub: 0/1 binary
+    ], axis=1)                                                           # (N,2)
+
+    # ── [40] 公交线路数 ─────────────────────────────────────────────────────
+    bus_df  = pd.read_csv(cfg["bus_feat_csv"], index_col=0).sort_index()
+    bus_raw = bus_df["num_bus_routes"].values.astype(np.float32)
+    bus_feat = np.log1p(bus_raw).reshape(-1, 1)                         # (N,1)
+
     # ── 拼接 ────────────────────────────────────────────────────────────────
     node_feat = np.concatenate([geo, dist_f, road_feat,
-                                poi_feat, sat_arr, hist, tr_feat], axis=1)  # (N,38)
-    assert node_feat.shape[1] == 38, node_feat.shape
+                                poi_feat, sat_arr, hist,
+                                tr_feat, sub_feat, bus_feat], axis=1)  # (N,41)
+    assert node_feat.shape[1] == 41, node_feat.shape
     return node_feat.astype(np.float32)
 
 
@@ -357,8 +379,17 @@ def process_city(city: str, cfg: dict):
     if len(ew) > 0:
         print(f"    corr 均值={ew.mean():.3f}, 最小={ew.min():.3f}")
 
+    # ── G_transit（轨道线路拓扑图，由 build_subway_features.py 生成）─────
+    transit_pt = cfg.get("transit_graph")
+    if transit_pt and Path(transit_pt).exists():
+        d = torch.load(transit_pt, weights_only=True)
+        E = d["edge_index"].shape[1]
+        print(f"  G_transit: {E} 条边（已预先生成，跳过重建）")
+    else:
+        print(f"  G_transit: 未找到 {transit_pt}，请先运行 build_subway_features.py")
+
     # ── 节点特征 ────────────────────────────────────────────────────────────
-    print(f"  节点特征矩阵...")
+    print(f"  节点特征矩阵 (41维)...")
     nf = build_node_features(cfg)
     out_path = OUT / f"node_features_{city}.npy"
     np.save(out_path, nf)
@@ -381,8 +412,14 @@ def main():
             E = d["edge_index"].shape[1]
             N = d["num_nodes"]
             print(f"    G_{gtype}: {E} 条边  ({E/N:.1f} 边/节点均值)")
+        transit_pt = CITIES[city]["transit_graph"]
+        if Path(transit_pt).exists():
+            d = torch.load(transit_pt, weights_only=True)
+            E = d["edge_index"].shape[1]
+            N = d["num_nodes"]
+            print(f"    G_transit: {E} 条边  ({E/N:.1f} 边/节点均值)")
         nf = np.load(OUT / f"node_features_{city}.npy")
-        print(f"    node_features: {nf.shape}  dtype={nf.dtype}")
+        print(f"    node_features: {nf.shape}  dtype={nf.dtype}  (应为 (N,41))")
 
     print("\n  完成。")
 

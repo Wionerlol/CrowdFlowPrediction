@@ -12,7 +12,7 @@
 
 | 类别 | 内容 | 维度 | 变化维度 | 文件 |
 |------|------|------|---------|------|
-| **静态节点特征** | 地理位置、路网、POI、遥感、历史统计、公共交通 | (N, 37) | 仅随空间变化 | `node_features_{city}.npy` |
+| **静态节点特征** | 地理位置、路网、POI、遥感、历史统计、公共交通、轨道/公交线路 | (N, 41) | 仅随空间变化 | `node_features_{city}.npy` |
 | **动态时间特征** | 时刻/星期/月份周期编码、节假日 | (T, 12) | 仅随时间变化 | `temporal_features_{city}.csv` |
 | **动态气象特征** | 温度、风速、降水等 12 维 | (T, 12) | 仅随时间变化（全城统一） | `weather_{city}_merged.csv` |
 
@@ -120,17 +120,41 @@ cos_enc = cos(2π × value / period)
 
 ### 3.4 公共交通特征（OSM）
 
-从 OSM PBF 提取地铁站（`station=subway`）和地铁入口（`railway=subway_entrance`）节点，独立于 POI 特征进行建模：
+从 OSM PBF 提取地铁站（`station=subway`）、地铁入口（`railway=subway_entrance`）和公交站（`highway=bus_stop`）节点，独立于 POI 特征进行建模：
 
 | 特征 | 北京 | 纽约 | 归一化 |
 |------|------|------|-------|
-| subway_station_density（个/km²） | 369 站，25% 格覆盖 | 238 站，55% 格覆盖 | log1p + z-score |
-| subway_entrance_density（个/km²） | 983 个入口 | 1,153 个入口 | log1p + z-score |
-| bus_stop_density（个/km²） | 待统计（highway=bus_stop） | 待统计 | log1p + z-score |
+| subway_station_density（个/km²） | 369 站，253/1024（24.7%）格覆盖 | 238 站，41/75（54.7%）格覆盖 | log1p + z-score |
+| subway_entrance_density（个/km²） | 983 个入口，208/1024 格覆盖 | 1,153 个入口，41/75 格覆盖 | log1p + z-score |
+| bus_stop_density（个/km²） | 10,831 站，787/1024（76.9%）格覆盖，均值 4.56/km² | 3,015 站，66/75（88.0%）格覆盖，均值 12.57/km² | log1p + z-score |
 
 三维分工：站数反映地铁线网覆盖，入口数反映换乘通达性，公交站数覆盖地铁盲区的地面公共交通。
 
-### 3.5 遥感特征（Landsat-8）
+### 3.5 轨道线路特征（政府数据 + OSM 名称匹配）
+
+通过 OSM 站名匹配政府 `轨道站点信息.xlsx`（342个站，18条线），提取每格的线路覆盖信息：
+
+| 特征 | 北京 | 纽约 | 归一化 |
+|------|------|------|-------|
+| num_subway_lines（穿越线路数） | 208/1024 格有线路，55 格为换乘枢纽 | 41/75 格有线路，33 格为换乘枢纽 | log1p |
+| is_transfer_hub（换乘枢纽标志） | 0/1 binary | 0/1 binary | 无 |
+
+与密度特征互补：密度反映"有多少个站"，线路数反映"通达多少条线路"。换乘枢纽（西直门/国贸/东直门等）是高流量异常的频发位置。
+
+**数据来源**：北京使用政府 `轨道站点信息.xlsx`（342站18线）与 OSM 坐标站名匹配，匹配率 940/1079（87.1%）；纽约使用 OSM `route=subway` 关系，31条线路，1,601个成员节点。
+
+### 3.6 公交线路特征（MTA GTFS / OSM route=bus 关系）
+
+通过公交线路数据获取每个公交站所属线路，对每格统计唯一线路数：
+
+| 特征 | 北京 | 纽约 | 归一化 |
+|------|------|------|-------|
+| num_bus_routes（网格内公交线路数） | 765/1024（74.7%）格有线路，均值 7.6，最大 64 | 48/75（64.0%）格有线路，均值 7.6，最大 41 | log1p |
+
+**北京数据来源**：OSM 2098 条 `route=bus` 关系，bbox 内覆盖率 88.4%；剩余通过政府 `公交站点信息.xlsx` 模糊匹配补全 890 个站点。  
+**纽约数据来源**：MTA GTFS 5区数据（Brooklyn/Bronx/Manhattan/Queens/Staten Island），255条 route_type=3 公交线路，**100% 站点覆盖**。
+
+### 3.7 遥感特征（Landsat-8）
 
 **数据**：L1TP 级别 DN 值，使用 MTL.txt 校正参数转换为 TOA（大气层顶）反射率：
 
@@ -162,7 +186,7 @@ cos_enc = cos(2π × value / period)
 
 ### 4.1 特征拼接规格
 
-将上述所有静态特征合并为每节点 **38 维**向量：
+将上述所有静态特征合并为每节点 **41 维**向量：
 
 | 索引 | 分组 | 维度 | 归一化方式 |
 |------|------|------|----------|
@@ -173,6 +197,8 @@ cos_enc = cos(2π × value / period)
 | [22:27] | 遥感指数 | 5 | z-score |
 | [27:35] | 历史流量统计 | 8 | 见下表 |
 | [35:38] | 公共交通密度（地铁站/入口/公交站） | 3 | log1p 后 z-score |
+| [38:40] | 轨道线路（num_subway_lines/is_transfer_hub） | 2 | log1p / binary |
+| [40] | 公交线路数（num_bus_routes） | 1 | log1p |
 
 **历史统计特征（[27:35]）：**
 
@@ -191,8 +217,8 @@ cos_enc = cos(2π × value / period)
 
 | 文件 | 规格 | NaN |
 |------|------|-----|
-| `node_features_bj.npy` | (1024, 38) float32 | 待重跑 |
-| `node_features_nyc.npy` | (75, 38) float32 | 待重跑 |
+| `node_features_bj.npy` | (1024, 41) float32，164.1 KB | 0 ✅ |
+| `node_features_nyc.npy` | (75, 41) float32，12.1 KB | 0 ✅ |
 
 ---
 
@@ -250,9 +276,11 @@ corr(i,j) = (X_i − μ_i)/σ_i · (X_j − μ_j)/σ_j / T
 | 北京 | G_spatial | 1024 | 7,812 | 7.6 |
 | 北京 | G_poi | 1024 | 10,240 | 10.0 |
 | 北京 | G_flow | 1024 | 15,255 | 14.9 |
+| 北京 | G_transit | 1024 | 3,080 | 3.0 |
 | 纽约 | G_spatial | 75 | 484 | 6.5 |
 | 纽约 | G_poi | 75 | 750 | 10.0 |
 | 纽约 | G_flow | 75 | 1,125 | 15.0 |
+| 纽约 | G_transit | 75 | 754 | 10.1 |
 
 ### 5.5 存储格式
 
@@ -282,24 +310,30 @@ corr(i,j) = (X_i − μ_i)/σ_i · (X_j − μ_j)/σ_j / T
 
 ```
 data/processed/
-├── temporal_features_bj.csv     (22484, 12)  北京时间特征
-├── temporal_features_nyc.csv    (17520, 12)  纽约时间特征
-├── spatial_features_bj.csv      (1024,  16)  北京空间距离+路网
-├── spatial_features_nyc.csv     (75,    16)  纽约空间距离+路网
-├── poi_features_bj.csv          (1024,  22)  北京 POI（11类×count+density）
-├── poi_features_nyc.csv         (75,    22)  纽约 POI
-├── satellite_features_bj.csv    (1024,   5)  北京遥感指数
-├── satellite_features_nyc.csv   (75,     5)  纽约遥感指数
-├── transit_features_bj.csv      (1024,   6)  北京公共交通（地铁站/入口/公交站 ×count+density）
-├── transit_features_nyc.csv     (75,     6)  纽约公共交通
-├── node_features_bj.npy         (1024,  38)  北京节点静态特征矩阵（待重跑）
-├── node_features_nyc.npy        (75,    38)  纽约节点静态特征矩阵（待重跑）
-├── graph_spatial_bj.pt          edges=7812   北京空间邻接图
-├── graph_poi_bj.pt              edges=10240  北京 POI 语义图
-├── graph_flow_bj.pt             edges=15255  北京流量相关图
-├── graph_spatial_nyc.pt         edges=484    纽约空间邻接图
-├── graph_poi_nyc.pt             edges=750    纽约 POI 语义图
-└── graph_flow_nyc.pt            edges=1125   纽约流量相关图
+├── temporal_features_bj.csv         (22484, 12)  北京时间特征
+├── temporal_features_nyc.csv        (17520, 12)  纽约时间特征
+├── spatial_features_bj.csv          (1024,  16)  北京空间距离+路网
+├── spatial_features_nyc.csv         (75,    16)  纽约空间距离+路网
+├── poi_features_bj.csv              (1024,  22)  北京 POI（11类×count+density）
+├── poi_features_nyc.csv             (75,    22)  纽约 POI
+├── satellite_features_bj.csv        (1024,   5)  北京遥感指数
+├── satellite_features_nyc.csv       (75,     5)  纽约遥感指数
+├── transit_features_bj.csv          (1024,   6)  北京公共交通（地铁站/入口/公交站 ×count+density）
+├── transit_features_nyc.csv         (75,     6)  纽约公共交通
+├── subway_grid_features_bj.csv      (1024,   2)  北京轨道线路特征
+├── subway_grid_features_nyc.csv     (75,     2)  纽约轨道线路特征
+├── bus_route_features_bj.csv        (1024,   1)  北京公交线路数
+├── bus_route_features_nyc.csv       (75,     1)  纽约公交线路数
+├── node_features_bj.npy             (1024,  41)  北京节点静态特征矩阵，NaN=0
+├── node_features_nyc.npy            (75,    41)  纽约节点静态特征矩阵，NaN=0
+├── graph_spatial_bj.pt              edges=7812   北京空间邻接图
+├── graph_poi_bj.pt                  edges=10240  北京 POI 语义图
+├── graph_flow_bj.pt                 edges=15255  北京流量相关图
+├── graph_transit_bj.pt              edges=3080   北京轨道线路拓扑图
+├── graph_spatial_nyc.pt             edges=484    纽约空间邻接图
+├── graph_poi_nyc.pt                 edges=750    纽约 POI 语义图
+├── graph_flow_nyc.pt                edges=1125   纽约流量相关图
+└── graph_transit_nyc.pt             edges=754    纽约轨道线路拓扑图
 ```
 
 ---
