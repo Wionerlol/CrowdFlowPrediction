@@ -7,7 +7,6 @@ data/interim/
 *.tif
 *.pbf
 *.parquet
-*.pdf
 
 # ── 模型权重与检查点 ────────────────────────────────────────
 outputs/checkpoints/
