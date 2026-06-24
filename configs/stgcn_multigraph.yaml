@@ -1,0 +1,19 @@
+model: stgcn_multigraph
+city: bj
+# 数据
+T_in:  12
+T_out: 12
+# 网络
+sp_ch:  64
+out_ch: 16
+K:      3
+graphs: [spatial, poi, flow, transit]   # 四图门控融合
+# 训练
+batch:        32
+epochs:       100
+lr:           0.001
+weight_decay: 0.0001
+patience:     15
+# 输出
+save_path: outputs/checkpoints/stgcn_multigraph/best.pt
+log_dir:   outputs/logs/stgcn_multigraph
