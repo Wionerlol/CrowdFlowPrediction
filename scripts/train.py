@@ -91,10 +91,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="YAML 配置文件路径")
     parser.add_argument("--device", default=None, help="cuda / cpu（默认自动选择）")
+    parser.add_argument("--t_in",   type=int, default=None, help="覆盖 config 中的 T_in")
+    parser.add_argument("--batch",  type=int, default=None, help="覆盖 config 中的 batch")
+    parser.add_argument("--tag",    type=str, default=None, help="运行标签（写入结果 CSV）")
     args = parser.parse_args()
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
+
+    # CLI 参数覆盖 yaml
+    if args.t_in  is not None: cfg["T_in"]  = args.t_in
+    if args.batch is not None: cfg["batch"] = args.batch
+    if args.tag   is not None: cfg["tag"]   = args.tag
 
     device = torch.device(
         args.device if args.device
@@ -153,7 +161,7 @@ def main():
         weight_decay=cfg["weight_decay"],
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=5, verbose=False,
+        optimizer, mode="min", factor=0.5, patience=5,
     )
     loss_fn = nn.HuberLoss()
 
@@ -199,10 +207,12 @@ def main():
     with open(result_path, "a", newline="") as f:
         w = csv.writer(f)
         if write_header:
-            w.writerow(["model", "city", "horizon",
-                        "MAE", "RMSE", "MAPE", "config"])
+            w.writerow(["model", "city", "T_in", "T_out", "tag",
+                        "horizon", "MAE", "RMSE", "MAPE", "config"])
+        tag = cfg.get("tag", "")
         for h, m in test_metrics.items():
-            w.writerow([cfg["model"], city, h,
+            w.writerow([cfg["model"], city,
+                        cfg["T_in"], cfg["T_out"], tag, h,
                         f"{m['MAE']:.4f}", f"{m['RMSE']:.4f}", f"{m['MAPE']:.2f}",
                         json.dumps(cfg)])
     print(f"\n结果已追加到 {result_path}")
