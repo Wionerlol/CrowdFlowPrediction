@@ -22,23 +22,35 @@ def load_taxinyc(path: str = "data/processed/taxinyc_clean.npz"):
     return d["data"], d["timestamps"]   # (17520,2,15,5), (17520,)
 
 
-def split_taxibj(data: np.ndarray):
+def split_chronological(data: np.ndarray,
+                         train: float = 0.7,
+                         val:   float = 0.1,
+                         test:  float = 0.2) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    固定切分：BJ13+BJ14+BJ15[:75%] → 训练，BJ15[75%:] → 验证，BJ16 → 测试。
-    返回 (train, val, test) 三个 ndarray。
+    按时序比例切分（7:1:2），适用于任意城市数据。
+    不打乱顺序，确保测试集位于最后（时间最新）。
     """
-    n13, n14, n15 = _BJ_SEG["n13"], _BJ_SEG["n14"], _BJ_SEG["n15"]
-    train_end = n13 + n14 + int(n15 * (1 - _BJ_VAL_RATIO))
-    val_end   = n13 + n14 + n15
-    return data[:train_end], data[train_end:val_end], data[val_end:]
-
-
-def split_taxinyc(data: np.ndarray, train: float = 0.7, val: float = 0.15):
-    """按比例时序切分。"""
+    assert abs(train + val + test - 1.0) < 1e-6, "比例之和须为 1"
     T  = len(data)
     t1 = int(T * train)
     t2 = int(T * (train + val))
     return data[:t1], data[t1:t2], data[t2:]
+
+
+def split_taxibj(data: np.ndarray,
+                 train: float = 0.7,
+                 val:   float = 0.1,
+                 test:  float = 0.2):
+    """TaxiBJ 7:1:2 时序切分。"""
+    return split_chronological(data, train, val, test)
+
+
+def split_taxinyc(data: np.ndarray,
+                  train: float = 0.7,
+                  val:   float = 0.1,
+                  test:  float = 0.2):
+    """TaxiNYC 7:1:2 时序切分。"""
+    return split_chronological(data, train, val, test)
 
 
 class FlowDataset(Dataset):

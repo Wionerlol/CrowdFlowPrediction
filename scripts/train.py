@@ -37,6 +37,27 @@ def build_model(cfg: dict) -> nn.Module:
             num_layers=cfg["num_layers"],
             dropout=cfg["dropout"],
         )
+    if model_name == "gru":
+        from src.models.gru import NodeGRU
+        return NodeGRU(
+            T_in=T_in, T_out=T_out,
+            hidden=cfg["hidden"],
+            num_layers=cfg["num_layers"],
+            dropout=cfg["dropout"],
+        )
+    if model_name == "gcn":
+        from src.models.gnn_models import GCNPredictor
+        return GCNPredictor(
+            T_in=T_in, T_out=T_out,
+            hidden=cfg["hidden"],
+        )
+    if model_name == "gat":
+        from src.models.gnn_models import GATPredictor
+        return GATPredictor(
+            T_in=T_in, T_out=T_out,
+            hidden=cfg["hidden"],
+            heads=cfg.get("heads", 4),
+        )
     if model_name == "stgcn":
         from src.models.multi_graph_stgcn import SingleGraphSTGCN
         return SingleGraphSTGCN(
@@ -55,11 +76,13 @@ def build_model(cfg: dict) -> nn.Module:
     raise ValueError(f"未知模型：{model_name}")
 
 
+# 无需图的模型
+_NO_GRAPH_MODELS = {"lstm", "gru"}
+
 def build_graphs(cfg: dict, device: torch.device) -> dict | None:
-    model_name = cfg["model"]
-    if model_name == "lstm":
+    if cfg["model"] in _NO_GRAPH_MODELS:
         return None
-    city = cfg["city"]
+    city  = cfg["city"]
     names = cfg.get("graphs", ["spatial"])
     return load_graphs(city=city, graph_names=names, device=device)
 
