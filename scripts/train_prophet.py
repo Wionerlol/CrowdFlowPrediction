@@ -27,16 +27,14 @@ def fit_predict_prophet(series_train: np.ndarray,
                          series_test:  np.ndarray,
                          freq: str = "30min") -> np.ndarray:
     """
-    对单格时序拟合 Prophet，预测测试集每个起始点后 T_OUT 步。
-    采用滚动评估：每次以训练集末尾 + 已见测试步作为历史，预测下一个 T_OUT 窗口。
-    为节省时间，仅在测试集开头做一次全量预测（直接 forecast T_OUT 步）。
+    Fit-once：在训练集拟合一次 Prophet，直接预测整个测试集长度。
+    Prophet 学习的季节性分量可以外推到任意未来时间点，无需重新拟合。
     """
     try:
         from prophet import Prophet
     except ImportError:
         from fbprophet import Prophet
 
-    # 构建训练 DataFrame
     start = pd.Timestamp("2013-07-01")
     idx   = pd.date_range(start, periods=len(series_train), freq=freq)
     df_train = pd.DataFrame({"ds": idx, "y": series_train.astype(float)})
@@ -52,27 +50,16 @@ def fit_predict_prophet(series_train: np.ndarray,
         warnings.simplefilter("ignore")
         model.fit(df_train)
 
-    # 预测测试集（以固定窗口滚动，每隔 T_OUT 步预测一次）
-    preds = np.full(len(series_test), np.nan)
-    step  = T_OUT
-    for start_i in range(0, len(series_test), step):
-        history = np.concatenate([series_train,
-                                   series_test[:start_i]]) if start_i > 0 else series_train
-        hist_idx = pd.date_range(start, periods=len(history), freq=freq)
-        df_h = pd.DataFrame({"ds": hist_idx, "y": history.astype(float)})
-        m2 = Prophet(yearly_seasonality=False, weekly_seasonality=True,
-                     daily_seasonality=True, changepoint_prior_scale=0.05)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            m2.fit(df_h)
-        future_idx = pd.date_range(hist_idx[-1] + pd.Timedelta(freq),
-                                    periods=T_OUT, freq=freq)
-        future = pd.DataFrame({"ds": future_idx})
-        fc = m2.predict(future)["yhat"].values
-        end_i = min(start_i + T_OUT, len(series_test))
-        preds[start_i:end_i] = fc[:end_i - start_i]
+    # 直接预测整个测试集时间范围
+    future_idx = pd.date_range(
+        idx[-1] + pd.Timedelta(freq), periods=len(series_test), freq=freq
+    )
+    future = pd.DataFrame({"ds": future_idx})
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fc = model.predict(future)["yhat"].values
 
-    return preds
+    return fc
 
 
 def main():
@@ -111,7 +98,7 @@ def main():
     print(f"  非零格: {len(nonzero)}  本次评估: {len(grids)}")
 
     # ── 并行拟合 ──────────────────────────────────────────────────────
-    print("[2/3] 拟合 Prophet（每格滚动预测）...")
+    print("[2/3] 拟合 Prophet（fit-once，直接外推测试集）...")
     from joblib import Parallel, delayed
 
     results = Parallel(n_jobs=args.n_jobs, verbose=5)(
@@ -138,7 +125,7 @@ def main():
     m = compute_metrics(pred_t, true_t)
 
     print(f"\n{'='*45}")
-    print(f"Prophet 24h预测（{len(grids)} 非零格，滚动{T_OUT}步）")
+    print(f"Prophet 24h预测（{len(grids)} 非零格，fit-once）")
     print(f"  MAE  = {m['MAE']:.4f}")
     print(f"  RMSE = {m['RMSE']:.4f}")
     print(f"  MAPE = {m['MAPE']:.2f}%")
@@ -152,7 +139,7 @@ def main():
         if write_header:
             w.writerow(["model", "city", "horizon", "MAE", "RMSE", "MAPE", "config"])
         cfg_str = json.dumps({"model": "prophet", "grids": len(grids), "T_out": T_OUT})
-        w.writerow(["prophet", "bj", "avg",
+        w.writerow(["prophet", "bj", "all_history", T_OUT, "", "avg",
                     f"{m['MAE']:.4f}", f"{m['RMSE']:.4f}", f"{m['MAPE']:.2f}",
                     cfg_str])
     print(f"结果已追加到 {result_path}")
