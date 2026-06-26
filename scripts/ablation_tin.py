@@ -32,7 +32,17 @@ TIN_VARIANTS = [
 ]
 
 # T_in → 推荐 batch size（按 RTX 5080 16GB 估算）
-def auto_batch(t_in: int) -> int:
+# LSTM/GRU 内部把 (B, N=1024, T_in) 展开为 B*N 条序列，显存消耗是 GCN/GAT 的 N 倍
+_RNN_MODELS = {"lstm", "gru"}
+
+def auto_batch(t_in: int, model: str = "") -> int:
+    if model in _RNN_MODELS:
+        # RNN 模型：T_in=336 时 batch=16 会 OOM，需大幅缩减
+        if t_in <= 48:   return 8
+        if t_in <= 336:  return 4
+        if t_in <= 672:  return 2
+        return 1
+    # GCN/GAT 把 T_in 展平为特征，显存友好
     if t_in <= 48:   return 32
     if t_in <= 336:  return 16
     if t_in <= 672:  return 8
@@ -52,7 +62,7 @@ SKIP_MODELS = {"arima", "prophet", "stgcn", "stgcn_multigraph"}
 
 def build_command(model: str, t_in: int, tag: str) -> list[str]:
     cfg   = MODEL_CONFIGS[model]
-    batch = auto_batch(t_in)
+    batch = auto_batch(t_in, model)
     return [
         sys.executable, "scripts/train.py",
         "--config", cfg,
@@ -95,7 +105,7 @@ def main():
         for t_in, tag, label in variants:
             done += 1
             cmd = build_command(model, t_in, tag)
-            print(f"[{done}/{total}] {model}  T_in={t_in}（{label}）  batch={auto_batch(t_in)}")
+            print(f"[{done}/{total}] {model}  T_in={t_in}（{label}）  batch={auto_batch(t_in, model)}")
             print(f"  > {' '.join(cmd)}\n")
 
             if not args.dry_run:
