@@ -1,0 +1,30 @@
+model: gwnet_multigraph
+city:  bj
+N:     1024
+
+T_in:  48
+T_out: 48
+
+graphs: [spatial, poi, flow, transit]
+
+# 时序卷积
+dilations:   [1, 2, 4, 8, 16, 32]
+kernel_size: 2
+
+# 隐层维度（与单图版相同，公平对比）
+residual_ch: 32
+skip_ch:     64
+
+K:         2
+embed_dim: 10
+
+dropout:      0.3
+weight_decay: 0.0001
+
+batch:    16
+epochs:   100
+lr:       0.001
+patience: 15
+
+save_path: outputs/checkpoints/gwnet_multigraph/best.pt
+log_dir:   outputs/logs/gwnet_multigraph

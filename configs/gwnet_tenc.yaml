@@ -1,0 +1,28 @@
+model: gwnet
+city:  bj
+N:     1024
+
+T_in:  48
+T_out: 48
+
+# 时间编码
+time_enc: true
+F_in:     6        # 2(flow) + 4(time) = 6
+
+dilations:   [1, 2, 4, 8, 16, 32]
+kernel_size: 2
+
+residual_ch: 32
+skip_ch:     64
+
+embed_dim: 10
+dropout:   0.3
+weight_decay: 0.0001
+
+batch:    16
+epochs:   100
+lr:       0.001
+patience: 15
+
+save_path: outputs/checkpoints/gwnet_tenc/best.pt
+log_dir:   outputs/logs/gwnet_tenc

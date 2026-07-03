@@ -1,6 +1,7 @@
 """
 统一流量数据集模块，支持 TaxiBJ 和 TaxiNYC。
 """
+import math
 from pathlib import Path
 
 import numpy as np
@@ -76,7 +77,15 @@ class FlowDataset(Dataset):
                  T_in: int = 12,
                  T_out: int = 12,
                  mean: float | None = None,
-                 std:  float | None = None):
+                 std:  float | None = None,
+                 time_offset: int | None = None,
+                 steps_per_day: int = 48):
+        """
+        time_offset : 该分割在完整数据集中的绝对起始步数。
+                      不为 None 时，在 x 末尾追加 4 维正弦时间编码：
+                      [sin/cos(hour_of_day), sin/cos(day_of_week)]
+        steps_per_day : 一天包含多少个时间步（TaxiBJ 为 48，即 30 min/步）
+        """
         if mean is None:
             mean = float(data.mean())
             std  = float(data.std())
@@ -91,14 +100,36 @@ class FlowDataset(Dataset):
         self.T_out = T_out
         self.N     = H * W
         self.length = T - T_in - T_out + 1
+        self.time_offset   = time_offset
+        self.steps_per_day = steps_per_day
 
     def __len__(self):
         return self.length
 
+    def _time_enc(self, start_abs: int) -> torch.Tensor:
+        """正弦时间编码，返回 (T_in, 4)。"""
+        t = torch.arange(self.T_in, dtype=torch.float32) + start_abs
+        spd = self.steps_per_day
+        hour = t % spd                    # 当天第几步（0~47）
+        dow  = (t // spd) % 7            # 周几（0~6）
+        enc  = torch.stack([
+            torch.sin(2 * math.pi * hour / spd),
+            torch.cos(2 * math.pi * hour / spd),
+            torch.sin(2 * math.pi * dow  / 7),
+            torch.cos(2 * math.pi * dow  / 7),
+        ], dim=1)                         # (T_in, 4)
+        return enc
+
     def __getitem__(self, idx):
-        x = self.flow[idx : idx + self.T_in]                              # (T_in, N, 2)
+        x = self.flow[idx : idx + self.T_in]                                  # (T_in, N, 2)
         y = self.flow[idx + self.T_in : idx + self.T_in + self.T_out, :, 0]  # (T_out, N)
-        return x.permute(1, 0, 2), y.permute(1, 0)                        # (N, T_in, 2), (N, T_out)
+
+        if self.time_offset is not None:
+            enc = self._time_enc(idx + self.time_offset)       # (T_in, 4)
+            enc = enc.unsqueeze(1).expand(-1, self.N, -1)      # (T_in, N, 4)
+            x   = torch.cat([x, enc], dim=-1)                  # (T_in, N, 6)
+
+        return x.permute(1, 0, 2), y.permute(1, 0)            # (N, T_in, F), (N, T_out)
 
 
 def load_graphs(city: str = "bj",

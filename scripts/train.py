@@ -62,6 +62,7 @@ def build_model(cfg: dict) -> nn.Module:
         from src.models.multi_graph_stgcn import SingleGraphSTGCN
         return SingleGraphSTGCN(
             T_in=T_in, T_out=T_out,
+            F_in=cfg.get("F_in", 2),
             n_ch=(cfg["sp_ch"], cfg["out_ch"]),
             K=cfg["K"],
         )
@@ -72,6 +73,55 @@ def build_model(cfg: dict) -> nn.Module:
             n_ch=(cfg["sp_ch"], cfg["out_ch"]),
             K=cfg["K"],
             graph_names=cfg.get("graphs"),
+        )
+    if model_name == "agformer":
+        from src.models.agformer import AGFormer
+        return AGFormer(
+            N=cfg["N"],
+            T_in=T_in, T_out=T_out,
+            F_in=cfg.get("F_in", 2),
+            d_model=cfg.get("d_model", 64),
+            n_heads=cfg.get("n_heads", 4),
+            d_ff=cfg.get("d_ff", 128),
+            num_layers=cfg.get("num_layers", 3),
+            embed_dim=cfg.get("embed_dim", 10),
+            dropout=cfg.get("dropout", 0.1),
+        )
+    if model_name == "timesnet":
+        from src.models.timesnet import TimesNet
+        return TimesNet(
+            T_in=T_in, T_out=T_out,
+            d_model=cfg.get("d_model", 64),
+            d_ff=cfg.get("d_ff", 128),
+            num_layers=cfg.get("num_layers", 2),
+            top_k=cfg.get("top_k", 3),
+            dropout=cfg.get("dropout", 0.1),
+        )
+    if model_name == "gwnet":
+        from src.models.gwnet import GraphWaveNet
+        return GraphWaveNet(
+            N=cfg["N"],
+            T_in=T_in, T_out=T_out,
+            F_in=cfg.get("F_in", 2),
+            residual_ch=cfg.get("residual_ch", 32),
+            skip_ch=cfg.get("skip_ch", 64),
+            dilations=cfg.get("dilations"),
+            kernel_size=cfg.get("kernel_size", 2),
+            embed_dim=cfg.get("embed_dim", 10),
+            dropout=cfg.get("dropout", 0.3),
+        )
+    if model_name == "gwnet_multigraph":
+        from src.models.gwnet import MultiGraphWaveNet
+        return MultiGraphWaveNet(
+            N=cfg["N"],
+            T_in=T_in, T_out=T_out,
+            residual_ch=cfg.get("residual_ch", 32),
+            skip_ch=cfg.get("skip_ch", 64),
+            graph_names=cfg.get("graphs"),
+            dilations=cfg.get("dilations"),
+            kernel_size=cfg.get("kernel_size", 2),
+            embed_dim=cfg.get("embed_dim", 10),
+            dropout=cfg.get("dropout", 0.3),
         )
     raise ValueError(f"未知模型：{model_name}")
 
@@ -125,14 +175,25 @@ def main():
 
     T_in  = cfg["T_in"]
     T_out = cfg["T_out"]
-    train_ds = FlowDataset(train_raw, T_in, T_out)
-    val_ds   = FlowDataset(val_raw,   T_in, T_out, train_ds.mean, train_ds.std)
-    test_ds  = FlowDataset(test_raw,  T_in, T_out, train_ds.mean, train_ds.std)
+    # 时间编码：time_enc=true 时向 x 追加 4 维正弦特征，F_in 变为 6
+    time_enc = cfg.get("time_enc", False)
+    t_offset_train = 0
+    t_offset_val   = len(train_raw)
+    t_offset_test  = len(train_raw) + len(val_raw)
+    tenc_kw_train = {"time_offset": t_offset_train} if time_enc else {}
+    tenc_kw_val   = {"time_offset": t_offset_val}   if time_enc else {}
+    tenc_kw_test  = {"time_offset": t_offset_test}  if time_enc else {}
+
+    train_ds = FlowDataset(train_raw, T_in, T_out, **tenc_kw_train)
+    val_ds   = FlowDataset(val_raw,   T_in, T_out, train_ds.mean, train_ds.std, **tenc_kw_val)
+    test_ds  = FlowDataset(test_raw,  T_in, T_out, train_ds.mean, train_ds.std, **tenc_kw_test)
     mean, std = train_ds.mean, train_ds.std
     print(f"  Train: {len(train_ds):,}  Val: {len(val_ds):,}  Test: {len(test_ds):,}")
     print(f"  归一化: mean={mean:.2f}  std={std:.2f}")
+    if time_enc:
+        print(f"  时间编码: 已启用（F_in=6）")
 
-    num_workers = min(4, __import__("os").cpu_count() or 1)
+    num_workers = cfg.get("num_workers", min(4, __import__("os").cpu_count() or 1))
     train_loader = DataLoader(train_ds, batch_size=cfg["batch"],
                                shuffle=True,  num_workers=num_workers, pin_memory=True)
     val_loader   = DataLoader(val_ds,   batch_size=cfg["batch"],

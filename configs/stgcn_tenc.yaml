@@ -1,0 +1,21 @@
+model: stgcn
+city:  bj
+T_in:  48
+T_out: 48
+
+# 时间编码：追加 sin/cos(hour_of_day) + sin/cos(day_of_week)
+time_enc: true
+F_in:     6        # 2(flow) + 4(time) = 6
+
+sp_ch:  32
+out_ch: 16
+K:      3
+
+batch:        32
+epochs:       100
+lr:           0.001
+weight_decay: 0.0001
+patience:     15
+
+save_path: outputs/checkpoints/stgcn_tenc/best.pt
+log_dir:   outputs/logs/stgcn_tenc
