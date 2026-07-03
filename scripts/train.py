@@ -97,6 +97,20 @@ def build_model(cfg: dict) -> nn.Module:
             top_k=cfg.get("top_k", 3),
             dropout=cfg.get("dropout", 0.1),
         )
+    if model_name == "spacetimeformer":
+        from src.models.spacetimeformer import Spacetimeformer
+        return Spacetimeformer(
+            N=cfg["N"],
+            T_in=T_in, T_out=T_out,
+            F_in=cfg.get("F_in", 2),
+            d_model=cfg.get("d_model", 16),
+            n_heads=cfg.get("n_heads", 2),
+            d_ff=cfg.get("d_ff", 32),
+            num_layers=cfg.get("num_layers", 2),
+            chunk_size=cfg.get("chunk_size", 256),
+            num_global_tokens=cfg.get("num_global_tokens", 8),
+            dropout=cfg.get("dropout", 0.1),
+        )
     if model_name == "gwnet":
         from src.models.gwnet import GraphWaveNet
         return GraphWaveNet(
@@ -126,8 +140,8 @@ def build_model(cfg: dict) -> nn.Module:
     raise ValueError(f"未知模型：{model_name}")
 
 
-# 无需图的模型
-_NO_GRAPH_MODELS = {"lstm", "gru"}
+# 无显式图结构的模型
+_NO_GRAPH_MODELS = {"lstm", "gru", "timesnet", "spacetimeformer"}
 
 def build_graphs(cfg: dict, device: torch.device) -> dict | None:
     if cfg["model"] in _NO_GRAPH_MODELS:
@@ -208,7 +222,7 @@ def main():
         for name, g in graphs.items():
             print(f"  G_{name}: {g['edge_index'].shape[1]} 条边")
     else:
-        print("  无图（LSTM 模式）")
+        print("  无显式图结构")
 
     # ── 模型 ──────────────────────────────────────────────────────────
     print(f"\n[3/4] 初始化模型...")
