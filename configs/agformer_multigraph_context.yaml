@@ -1,0 +1,32 @@
+model: agformer
+city: bj
+N: 1024
+T_in: 48
+T_out: 48
+F_in: 9
+
+d_model: 32
+n_heads: 4
+d_ff: 64
+num_layers: 2
+embed_dim: 10
+dropout: 0.1
+graphs: [spatial, poi, flow, transit]
+context_fusion: gated
+use_static: true
+static_dim: 33
+time_enc: true
+real_time_context: true
+filter_gaps: true
+
+seed: 42
+weight_decay: 0.0001
+batch: 8
+epochs: 50
+lr: 0.001
+patience: 10
+num_workers: 2
+tag: agformer_multigraph_context_seed42
+
+save_path: outputs/checkpoints/agformer_multigraph_context_seed42/best.pt
+log_dir: outputs/logs/agformer_multigraph_context_seed42

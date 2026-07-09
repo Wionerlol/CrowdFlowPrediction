@@ -1,0 +1,31 @@
+model: spacetimeformer
+city: bj
+N: 1024
+T_in: 48
+T_out: 48
+F_in: 9
+
+d_model: 16
+n_heads: 2
+d_ff: 32
+num_layers: 2
+chunk_size: 256
+num_global_tokens: 8
+dropout: 0.1
+use_static: true
+static_dim: 33
+time_enc: true
+real_time_context: true
+filter_gaps: true
+
+seed: 42
+batch: 4
+epochs: 50
+lr: 0.001
+weight_decay: 0.0001
+patience: 10
+num_workers: 2
+tag: spacetimeformer_realtime_context_seed42
+
+save_path: outputs/checkpoints/spacetimeformer_realtime_context_seed42/best.pt
+log_dir: outputs/logs/spacetimeformer_realtime_context_seed42

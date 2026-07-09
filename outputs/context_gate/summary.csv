@@ -1,0 +1,6 @@
+model,tag,MAE,RMSE,MAPE
+agformer,gate_flow_seed42,19.8381,36.9015,39.79
+agformer,gate_context_seed42,16.535,30.1288,37.35
+agformer,gate_time_seed42,17.3626,32.0872,38.63
+agformer,gate_static_seed42,19.8267,37.7971,37.29
+lstm,gapaware_seed42,19.6515,37.0815,35.64

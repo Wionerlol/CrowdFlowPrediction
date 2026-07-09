@@ -41,6 +41,29 @@ def load_bj_holidays(txt_path: str | Path | None = None) -> set:
     return holidays
 
 
+def load_bj_makeup_workdays() -> set:
+    """Return official weekend makeup-work dates for TaxiBJ (2013-2016).
+
+    Sources are the annual State Council General Office holiday notices. These
+    dates override the normal weekend rule and must be encoded as workdays.
+    """
+    dates = {
+        # 2013: 国务院办公厅 2012-12-08 notice
+        "2013-01-05", "2013-01-06", "2013-02-16", "2013-02-17",
+        "2013-04-07", "2013-04-27", "2013-04-28", "2013-06-08",
+        "2013-06-09", "2013-09-22", "2013-09-29", "2013-10-12",
+        # 2014: 国办发明电〔2013〕28号
+        "2014-01-26", "2014-02-08", "2014-05-04", "2014-09-28",
+        "2014-10-11",
+        # 2015: 国办发明电〔2014〕28号
+        "2015-01-04", "2015-02-15", "2015-02-28", "2015-10-10",
+        # 2016: 国办发明电〔2015〕18号
+        "2016-02-06", "2016-02-14", "2016-06-12", "2016-09-18",
+        "2016-10-08", "2016-10-09",
+    }
+    return {pd.Timestamp(value).date() for value in dates}
+
+
 def us_federal_holidays(years: list[int]) -> set:
     """生成美国联邦假日集合（固定 + 浮动），返回 date 对象集合。"""
     holidays = set()

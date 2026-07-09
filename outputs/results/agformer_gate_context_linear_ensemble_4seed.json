@@ -1,0 +1,334 @@
+{
+  "windows": 4022,
+  "members": [
+    "agformer_gate_context_linear_seed42",
+    "agformer_gate_context_linear_seed7",
+    "agformer_gate_context_linear_seed21",
+    "agformer_gate_context_linear_seed123"
+  ],
+  "singles": [
+    {
+      "tag": "agformer_gate_context_linear_seed42",
+      "seed": 42,
+      "checkpoint": "outputs/checkpoints/agformer_gate_context_linear_seed42/best.pt",
+      "cfg": {
+        "model": "agformer",
+        "city": "bj",
+        "N": 1024,
+        "T_in": 48,
+        "T_out": 48,
+        "F_in": 9,
+        "d_model": 32,
+        "n_heads": 4,
+        "d_ff": 64,
+        "num_layers": 2,
+        "embed_dim": 10,
+        "dropout": 0.1,
+        "context_fusion": "gated",
+        "use_linear_output": true,
+        "use_static": true,
+        "static_dim": 33,
+        "time_enc": true,
+        "real_time_context": true,
+        "filter_gaps": true,
+        "seed": 42,
+        "weight_decay": 0.0001,
+        "batch": 8,
+        "epochs": 50,
+        "lr": 0.001,
+        "patience": 10,
+        "num_workers": 2,
+        "tag": "agformer_gate_context_linear_seed42",
+        "save_path": "outputs/checkpoints/agformer_gate_context_linear_seed42/best.pt",
+        "log_dir": "outputs/logs/agformer_gate_context_linear_seed42"
+      },
+      "metrics": {
+        "h1": {
+          "MAE": 11.406293869018555,
+          "RMSE": 19.94770622253418,
+          "MAPE": 23.960988998413086
+        },
+        "h3": {
+          "MAE": 13.034469604492188,
+          "RMSE": 23.13120460510254,
+          "MAPE": 31.064180374145508
+        },
+        "h6": {
+          "MAE": 14.021629333496094,
+          "RMSE": 24.88852882385254,
+          "MAPE": 36.46675491333008
+        },
+        "h12": {
+          "MAE": 14.613039016723633,
+          "RMSE": 26.3244686126709,
+          "MAPE": 37.21012878417969
+        },
+        "avg": {
+          "MAE": 16.113243103027344,
+          "RMSE": 30.319805145263672,
+          "MAPE": 36.907535552978516
+        }
+      },
+      "residual_stats": {
+        "mean": 15.451815605163574,
+        "std": 25.353565216064453,
+        "p50": 7.4204559326171875,
+        "p90": 36.502532958984375,
+        "p95": 55.2796630859375,
+        "p99": 118.82977294921875
+      }
+    },
+    {
+      "tag": "agformer_gate_context_linear_seed7",
+      "seed": 7,
+      "checkpoint": "outputs/checkpoints/agformer_gate_context_linear_seed7/best.pt",
+      "cfg": {
+        "model": "agformer",
+        "city": "bj",
+        "N": 1024,
+        "T_in": 48,
+        "T_out": 48,
+        "F_in": 9,
+        "d_model": 32,
+        "n_heads": 4,
+        "d_ff": 64,
+        "num_layers": 2,
+        "embed_dim": 10,
+        "dropout": 0.1,
+        "context_fusion": "gated",
+        "use_linear_output": true,
+        "use_static": true,
+        "static_dim": 33,
+        "time_enc": true,
+        "real_time_context": true,
+        "filter_gaps": true,
+        "seed": 7,
+        "weight_decay": 0.0001,
+        "batch": 8,
+        "epochs": 50,
+        "lr": 0.001,
+        "patience": 10,
+        "num_workers": 2,
+        "tag": "agformer_gate_context_linear_seed7",
+        "save_path": "outputs/checkpoints/agformer_gate_context_linear_seed7/best.pt",
+        "log_dir": "outputs/logs/agformer_gate_context_linear_seed7"
+      },
+      "metrics": {
+        "h1": {
+          "MAE": 11.600341796875,
+          "RMSE": 20.275209426879883,
+          "MAPE": 24.562397003173828
+        },
+        "h3": {
+          "MAE": 13.256826400756836,
+          "RMSE": 23.825883865356445,
+          "MAPE": 29.01485252380371
+        },
+        "h6": {
+          "MAE": 14.06373119354248,
+          "RMSE": 25.693065643310547,
+          "MAPE": 30.76873207092285
+        },
+        "h12": {
+          "MAE": 14.903666496276855,
+          "RMSE": 27.448320388793945,
+          "MAPE": 33.05897521972656
+        },
+        "avg": {
+          "MAE": 16.907878875732422,
+          "RMSE": 31.962743759155273,
+          "MAPE": 39.75372314453125
+        }
+      },
+      "residual_stats": {
+        "mean": 16.210399627685547,
+        "std": 26.760656356811523,
+        "p50": 7.6534576416015625,
+        "p90": 38.54331970214844,
+        "p95": 58.7879638671875,
+        "p99": 127.78341674804688
+      }
+    },
+    {
+      "tag": "agformer_gate_context_linear_seed21",
+      "seed": 21,
+      "checkpoint": "outputs/checkpoints/agformer_gate_context_linear_seed21/best.pt",
+      "cfg": {
+        "model": "agformer",
+        "city": "bj",
+        "N": 1024,
+        "T_in": 48,
+        "T_out": 48,
+        "F_in": 9,
+        "d_model": 32,
+        "n_heads": 4,
+        "d_ff": 64,
+        "num_layers": 2,
+        "embed_dim": 10,
+        "dropout": 0.1,
+        "context_fusion": "gated",
+        "use_linear_output": true,
+        "use_static": true,
+        "static_dim": 33,
+        "time_enc": true,
+        "real_time_context": true,
+        "filter_gaps": true,
+        "seed": 21,
+        "weight_decay": 0.0001,
+        "batch": 8,
+        "epochs": 50,
+        "lr": 0.001,
+        "patience": 10,
+        "num_workers": 2,
+        "tag": "agformer_gate_context_linear_seed21",
+        "save_path": "outputs/checkpoints/agformer_gate_context_linear_seed21/best.pt",
+        "log_dir": "outputs/logs/agformer_gate_context_linear_seed21"
+      },
+      "metrics": {
+        "h1": {
+          "MAE": 11.567803382873535,
+          "RMSE": 20.43219566345215,
+          "MAPE": 24.076879501342773
+        },
+        "h3": {
+          "MAE": 13.115937232971191,
+          "RMSE": 24.08602523803711,
+          "MAPE": 27.192174911499023
+        },
+        "h6": {
+          "MAE": 14.046152114868164,
+          "RMSE": 26.233928680419922,
+          "MAPE": 29.338863372802734
+        },
+        "h12": {
+          "MAE": 14.615654945373535,
+          "RMSE": 27.629108428955078,
+          "MAPE": 30.69695281982422
+        },
+        "avg": {
+          "MAE": 16.417152404785156,
+          "RMSE": 31.276582717895508,
+          "MAPE": 36.5075798034668
+        }
+      },
+      "residual_stats": {
+        "mean": 15.692177772521973,
+        "std": 26.287626266479492,
+        "p50": 7.413829803466797,
+        "p90": 37.375030517578125,
+        "p95": 56.749053955078125,
+        "p99": 124.95550537109375
+      }
+    },
+    {
+      "tag": "agformer_gate_context_linear_seed123",
+      "seed": 123,
+      "checkpoint": "outputs/checkpoints/agformer_gate_context_linear_seed123/best.pt",
+      "cfg": {
+        "model": "agformer",
+        "city": "bj",
+        "N": 1024,
+        "T_in": 48,
+        "T_out": 48,
+        "F_in": 9,
+        "d_model": 32,
+        "n_heads": 4,
+        "d_ff": 64,
+        "num_layers": 2,
+        "embed_dim": 10,
+        "dropout": 0.1,
+        "context_fusion": "gated",
+        "use_linear_output": true,
+        "use_static": true,
+        "static_dim": 33,
+        "time_enc": true,
+        "real_time_context": true,
+        "filter_gaps": true,
+        "seed": 123,
+        "weight_decay": 0.0001,
+        "batch": 8,
+        "epochs": 50,
+        "lr": 0.001,
+        "patience": 10,
+        "num_workers": 2,
+        "tag": "agformer_gate_context_linear_seed123",
+        "save_path": "outputs/checkpoints/agformer_gate_context_linear_seed123/best.pt",
+        "log_dir": "outputs/logs/agformer_gate_context_linear_seed123"
+      },
+      "metrics": {
+        "h1": {
+          "MAE": 11.52880573272705,
+          "RMSE": 20.119632720947266,
+          "MAPE": 24.36792755126953
+        },
+        "h3": {
+          "MAE": 13.0808744430542,
+          "RMSE": 23.567703247070312,
+          "MAPE": 27.96746253967285
+        },
+        "h6": {
+          "MAE": 13.889835357666016,
+          "RMSE": 25.417078018188477,
+          "MAPE": 29.760435104370117
+        },
+        "h12": {
+          "MAE": 14.625651359558105,
+          "RMSE": 26.92189598083496,
+          "MAPE": 32.506507873535156
+        },
+        "avg": {
+          "MAE": 16.546314239501953,
+          "RMSE": 31.130863189697266,
+          "MAPE": 38.101837158203125
+        }
+      },
+      "residual_stats": {
+        "mean": 15.832412719726562,
+        "std": 26.045692443847656,
+        "p50": 7.510894775390625,
+        "p90": 37.888580322265625,
+        "p95": 57.306396484375,
+        "p99": 123.12860107421875
+      }
+    }
+  ],
+  "ensemble": {
+    "tag": "agformer_gate_context_linear_ensemble_4seed",
+    "method": "mean",
+    "metrics": {
+      "h1": {
+        "MAE": 11.301942825317383,
+        "RMSE": 19.86208152770996,
+        "MAPE": 23.491294860839844
+      },
+      "h3": {
+        "MAE": 12.64726734161377,
+        "RMSE": 22.985578536987305,
+        "MAPE": 26.183828353881836
+      },
+      "h6": {
+        "MAE": 13.419421195983887,
+        "RMSE": 24.752958297729492,
+        "MAPE": 28.278858184814453
+      },
+      "h12": {
+        "MAE": 14.106825828552246,
+        "RMSE": 26.267614364624023,
+        "MAPE": 30.659135818481445
+      },
+      "avg": {
+        "MAE": 15.903036117553711,
+        "RMSE": 30.22504234313965,
+        "MAPE": 35.43501281738281
+      }
+    },
+    "residual_stats": {
+      "mean": 15.211896896362305,
+      "std": 25.39027976989746,
+      "p50": 7.174935340881348,
+      "p90": 36.30804443359375,
+      "p95": 55.05638122558594,
+      "p99": 119.70538330078125
+    }
+  }
+}

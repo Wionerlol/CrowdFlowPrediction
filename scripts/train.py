@@ -7,9 +7,11 @@
     python scripts/train.py --config configs/stgcn_multigraph.yaml
 """
 import argparse
+import random
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
 import yaml
@@ -24,10 +26,54 @@ from src.data.flow_dataset import (
 from src.training.trainer import Trainer
 
 
+def build_periodic_features(data: np.ndarray, timestamps: np.ndarray,
+                            mean: float, std: float,
+                            lags: list[int], include_deltas: bool) -> np.ndarray:
+    """Build exact-timestamp lag covariates using observations from the past."""
+    ts = timestamps.astype("datetime64[s]")
+    raw = data.reshape(len(data), 2, -1).transpose(0, 2, 1).astype(np.float32)
+    pieces = []
+    for lag in lags:
+        target = ts - np.timedelta64(30 * lag, "m")
+        pos = np.searchsorted(ts, target)
+        valid = pos < len(ts)
+        valid[valid] &= ts[pos[valid]] == target[valid]
+        lagged = np.full_like(raw, np.nan)
+        lagged[valid] = (raw[pos[valid]] - mean) / (std + 1e-8)
+        pieces.append(lagged)
+        if include_deltas:
+            delta = np.full_like(raw, np.nan)
+            delta[valid] = (raw[valid] - raw[pos[valid]]) / (std + 1e-8)
+            pieces.append(delta)
+    return np.concatenate(pieces, axis=-1)
+
+
+def load_static_features(cfg: dict) -> torch.Tensor | None:
+    """Load leakage-free static node features for contextual ablations.
+
+    The generated 41-D matrix contains eight full-dataset historical flow
+    statistics at columns [27:35]. Those are deliberately excluded here so
+    validation/test information cannot leak into a strict ablation.
+    """
+    if not cfg.get("use_static", False):
+        return None
+    path = Path(cfg.get(
+        "static_path", f"data/processed/node_features_{cfg['city']}.npy"
+    ))
+    features = np.load(path, allow_pickle=False)
+    if features.ndim != 2 or features.shape[0] != cfg["N"]:
+        raise ValueError(f"Unexpected static feature shape at {path}: {features.shape}")
+    features = np.concatenate([features[:, :27], features[:, 35:]], axis=1)
+    if features.shape[1] != 33 or not np.isfinite(features).all():
+        raise ValueError(f"Invalid leakage-free static features: {features.shape}")
+    return torch.from_numpy(features.astype(np.float32, copy=False))
+
+
 def build_model(cfg: dict) -> nn.Module:
     model_name = cfg["model"]
     T_in  = cfg["T_in"]
     T_out = cfg["T_out"]
+    static_features = load_static_features(cfg)
 
     if model_name == "lstm":
         from src.models.lstm import NodeLSTM
@@ -85,6 +131,14 @@ def build_model(cfg: dict) -> nn.Module:
             d_ff=cfg.get("d_ff", 128),
             num_layers=cfg.get("num_layers", 3),
             embed_dim=cfg.get("embed_dim", 10),
+            graph_names=cfg.get("graphs"),
+            static_features=static_features,
+            context_fusion=cfg.get("context_fusion", "add"),
+            flow_dim=cfg.get("flow_dim", 2),
+            time_dim=cfg.get("time_dim"),
+            weather_dim=cfg.get("weather_dim", 0),
+            future_time_dim=cfg.get("future_time_dim", 0),
+            use_linear_output=cfg.get("use_linear_output", False),
             dropout=cfg.get("dropout", 0.1),
         )
     if model_name == "timesnet":
@@ -109,6 +163,14 @@ def build_model(cfg: dict) -> nn.Module:
             num_layers=cfg.get("num_layers", 2),
             chunk_size=cfg.get("chunk_size", 256),
             num_global_tokens=cfg.get("num_global_tokens", 8),
+            static_features=static_features,
+            flow_dim=cfg.get("flow_dim", 2),
+            time_dim=cfg.get("time_dim"),
+            future_time_dim=cfg.get("future_time_dim", 0),
+            separate_value_time=cfg.get("separate_value_time", True),
+            use_given_embedding=cfg.get("use_given_embedding", True),
+            use_linear_output=cfg.get("use_linear_output", False),
+            context_fusion=cfg.get("context_fusion", "add"),
             dropout=cfg.get("dropout", 0.1),
         )
     if model_name == "gwnet":
@@ -168,6 +230,13 @@ def main():
     if args.batch is not None: cfg["batch"] = args.batch
     if args.tag   is not None: cfg["tag"]   = args.tag
 
+    seed = int(cfg.get("seed", 42))
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
     device = torch.device(
         args.device if args.device
         else ("cuda" if torch.cuda.is_available() else "cpu")
@@ -181,11 +250,16 @@ def main():
     city = cfg["city"]
     print("\n[1/4] 加载数据...")
     if city == "bj":
-        data, _ = load_taxibj()
+        data, timestamps = load_taxibj()
         train_raw, val_raw, test_raw = split_taxibj(data)
     else:
-        data, _ = load_taxinyc()
+        data, timestamps = load_taxinyc()
         train_raw, val_raw, test_raw = split_taxinyc(data)
+
+    n_train, n_val = len(train_raw), len(val_raw)
+    train_ts = timestamps[:n_train]
+    val_ts = timestamps[n_train:n_train + n_val]
+    test_ts = timestamps[n_train + n_val:]
 
     T_in  = cfg["T_in"]
     T_out = cfg["T_out"]
@@ -194,9 +268,65 @@ def main():
     t_offset_train = 0
     t_offset_val   = len(train_raw)
     t_offset_test  = len(train_raw) + len(val_raw)
-    tenc_kw_train = {"time_offset": t_offset_train} if time_enc else {}
-    tenc_kw_val   = {"time_offset": t_offset_val}   if time_enc else {}
-    tenc_kw_test  = {"time_offset": t_offset_test}  if time_enc else {}
+    real_time = cfg.get("real_time_context", False)
+    filter_gaps = cfg.get("filter_gaps", False)
+    if real_time:
+        from src.features.temporal import (
+            load_bj_holidays, load_bj_makeup_workdays, us_federal_holidays,
+        )
+        years = sorted({int(str(t)[:4]) for t in timestamps})
+        holidays = load_bj_holidays() if city == "bj" else us_federal_holidays(years)
+        makeup_workdays = (load_bj_makeup_workdays()
+                           if city == "bj" and cfg.get("makeup_calendar", False)
+                           else None)
+        tz_offset = 8 if city == "bj" else -5
+        common = {"tz_offset": tz_offset, "holidays": holidays,
+                  "filter_gaps": filter_gaps}
+        if makeup_workdays is not None:
+            common["makeup_workdays"] = makeup_workdays
+        tenc_kw_train = {**common, "timestamps": train_ts,
+                         "include_time_features": True} if time_enc else {
+            "timestamps": train_ts, "filter_gaps": filter_gaps}
+        tenc_kw_val = {**common, "timestamps": val_ts,
+                       "include_time_features": True} if time_enc else {
+            "timestamps": val_ts, "filter_gaps": filter_gaps}
+        tenc_kw_test = {**common, "timestamps": test_ts,
+                        "include_time_features": True} if time_enc else {
+            "timestamps": test_ts, "filter_gaps": filter_gaps}
+    else:
+        tenc_kw_train = {"time_offset": t_offset_train} if time_enc else {}
+        tenc_kw_val   = {"time_offset": t_offset_val}   if time_enc else {}
+        tenc_kw_test  = {"time_offset": t_offset_test}  if time_enc else {}
+
+    if cfg.get("use_weather", False):
+        from src.data.weather_features import build_weather_features
+        weather_path = cfg.get(
+            "weather_path", f"data/processed/weather_{city}_merged.csv"
+        )
+        train_weather, weather_stats = build_weather_features(train_ts, weather_path)
+        val_weather, _ = build_weather_features(val_ts, weather_path, weather_stats)
+        test_weather, _ = build_weather_features(test_ts, weather_path, weather_stats)
+        tenc_kw_train["weather_features"] = train_weather
+        tenc_kw_val["weather_features"] = val_weather
+        tenc_kw_test["weather_features"] = test_weather
+    if cfg.get("future_time_context", False):
+        if not time_enc or not real_time:
+            raise ValueError("future_time_context requires real timestamp time encoding")
+        tenc_kw_train["return_future_time"] = True
+        tenc_kw_val["return_future_time"] = True
+        tenc_kw_test["return_future_time"] = True
+
+    periodic_lags = cfg.get("periodic_lags", [])
+    if periodic_lags:
+        train_mean, train_std = float(train_raw.mean()), float(train_raw.std())
+        periodic = build_periodic_features(
+            data, timestamps, train_mean, train_std,
+            [int(x) for x in periodic_lags],
+            bool(cfg.get("periodic_deltas", False)),
+        )
+        tenc_kw_train["dynamic_features"] = periodic[:n_train]
+        tenc_kw_val["dynamic_features"] = periodic[n_train:n_train + n_val]
+        tenc_kw_test["dynamic_features"] = periodic[n_train + n_val:]
 
     train_ds = FlowDataset(train_raw, T_in, T_out, **tenc_kw_train)
     val_ds   = FlowDataset(val_raw,   T_in, T_out, train_ds.mean, train_ds.std, **tenc_kw_val)
@@ -205,11 +335,24 @@ def main():
     print(f"  Train: {len(train_ds):,}  Val: {len(val_ds):,}  Test: {len(test_ds):,}")
     print(f"  归一化: mean={mean:.2f}  std={std:.2f}")
     if time_enc:
-        print(f"  时间编码: 已启用（F_in=6）")
+        print(f"  时间编码: 已启用（F_in={cfg.get('F_in')}，"
+              f"{'真实时间戳' if real_time else '序号推算'}）")
+    if filter_gaps:
+        print("  间断过滤: 已启用（窗口内必须全为连续30分钟）")
+    if cfg.get("makeup_calendar", False):
+        print("  调休日历: 已启用（官方周末补班覆盖）")
+    if cfg.get("use_weather", False):
+        print(f"  天气特征: 已启用（weather_dim={cfg.get('weather_dim')}）")
+    if cfg.get("future_time_context", False):
+        print(f"  未来时间解码: 已启用（future_time_dim={cfg.get('future_time_dim')}）")
+    if periodic_lags:
+        print(f"  周期滞后: {periodic_lags}，差值={cfg.get('periodic_deltas', False)}")
 
     num_workers = cfg.get("num_workers", min(4, __import__("os").cpu_count() or 1))
+    loader_generator = torch.Generator().manual_seed(seed)
     train_loader = DataLoader(train_ds, batch_size=cfg["batch"],
-                               shuffle=True,  num_workers=num_workers, pin_memory=True)
+                               shuffle=True, num_workers=num_workers, pin_memory=True,
+                               generator=loader_generator)
     val_loader   = DataLoader(val_ds,   batch_size=cfg["batch"],
                                shuffle=False, num_workers=num_workers, pin_memory=True)
     test_loader  = DataLoader(test_ds,  batch_size=cfg["batch"],
@@ -227,6 +370,15 @@ def main():
     # ── 模型 ──────────────────────────────────────────────────────────
     print(f"\n[3/4] 初始化模型...")
     model = build_model(cfg)
+    resume_from = cfg.get("resume_from")
+    if resume_from:
+        ckpt = torch.load(resume_from, map_location="cpu", weights_only=False)
+        model.load_state_dict(ckpt["model"], strict=True)
+        if "val_mae" in ckpt:
+            cfg["initial_best_val_mae"] = float(ckpt["val_mae"])
+        print(f"  恢复模型: {resume_from}"
+              f"（epoch={ckpt.get('epoch', '?')}, "
+              f"val_MAE={ckpt.get('val_mae', float('nan')):.4f}）")
     params = sum(p.numel() for p in model.parameters()) / 1e6
     print(f"  参数量: {params:.3f} M")
 

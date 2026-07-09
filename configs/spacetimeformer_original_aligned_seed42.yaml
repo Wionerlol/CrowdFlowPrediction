@@ -1,0 +1,38 @@
+model: spacetimeformer
+city: bj
+N: 1024
+T_in: 48
+T_out: 48
+F_in: 9
+
+d_model: 32
+n_heads: 4
+d_ff: 64
+num_layers: 2
+dropout: 0.1
+
+flow_dim: 2
+time_dim: 7
+separate_value_time: true
+use_given_embedding: true
+future_time_context: true
+future_time_dim: 7
+use_linear_output: false
+
+use_static: true
+static_dim: 33
+time_enc: true
+real_time_context: true
+filter_gaps: true
+
+seed: 42
+batch: 4
+epochs: 50
+lr: 0.001
+weight_decay: 0.0001
+patience: 10
+num_workers: 2
+tag: spacetimeformer_original_aligned_seed42
+
+save_path: outputs/checkpoints/spacetimeformer_original_aligned_seed42/best.pt
+log_dir: outputs/logs/spacetimeformer_original_aligned_seed42

@@ -81,12 +81,24 @@ class Trainer:
 
     # ── 单 epoch 训练 ───────────────────────────────────────────────────
 
+    def _move_batch(self, value):
+        """Move nested tensor inputs to the training device."""
+        if isinstance(value, torch.Tensor):
+            return value.to(self.device)
+        if isinstance(value, tuple):
+            return tuple(self._move_batch(v) for v in value)
+        if isinstance(value, list):
+            return [self._move_batch(v) for v in value]
+        if isinstance(value, dict):
+            return {k: self._move_batch(v) for k, v in value.items()}
+        return value
+
     def _train_epoch(self, loader: DataLoader,
                      graphs: dict | None) -> float:
         self.model.train()
         losses = []
         for x, y in loader:
-            x, y = x.to(self.device), y.to(self.device)
+            x, y = self._move_batch(x), y.to(self.device)
             self.optimizer.zero_grad()
             pred = self.model(x, graphs)
             loss = self.loss_fn(pred, y)
@@ -112,7 +124,7 @@ class Trainer:
         self.model.eval()
         all_pred, all_true = [], []
         for x, y in loader:
-            x = x.to(self.device)
+            x = self._move_batch(x)
             pred = self.model(x, graphs)                   # (B, N, T_out)
             all_pred.append(pred.cpu())
             all_true.append(y)
@@ -142,9 +154,13 @@ class Trainer:
         """
         graphs = self._to_device(graphs)
 
-        best_val_mae   = float("inf")
+        initial_best_val = self.cfg.get("initial_best_val_mae")
+        best_val_mae   = float(initial_best_val) if initial_best_val is not None else float("inf")
         patience_cnt   = 0
         best_state     = None
+        if initial_best_val is not None:
+            best_state = {k: v.detach().cpu().clone()
+                          for k, v in self.model.state_dict().items()}
         t_start        = time.time()
 
         for epoch in range(1, epochs + 1):

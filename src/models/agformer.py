@@ -114,16 +114,78 @@ class AGFormer(nn.Module):
                  d_ff: int = 128,
                  num_layers: int = 3,
                  embed_dim: int = 10,
+                 graph_names: list[str] | None = None,
+                 static_features: torch.Tensor | None = None,
+                 context_fusion: str = "add",
+                 flow_dim: int = 2,
+                 time_dim: int | None = None,
+                 weather_dim: int = 0,
+                 future_time_dim: int = 0,
+                 use_linear_output: bool = False,
                  dropout: float = 0.1):
         super().__init__()
         self.N     = N
         self.T_out = T_out
+        self.future_time_dim = future_time_dim
+        self.use_linear_output = use_linear_output
+        self.graph_names = graph_names or ["spatial"]
+        if not self.graph_names:
+            raise ValueError("graph_names must contain at least one graph")
+        self.graph_logits = (nn.Parameter(torch.zeros(len(self.graph_names)))
+                             if len(self.graph_names) > 1 else None)
 
         # 自适应邻接矩阵嵌入
         self.E1 = nn.Parameter(torch.randn(N, embed_dim) * 0.01)
         self.E2 = nn.Parameter(torch.randn(N, embed_dim) * 0.01)
 
-        self.input_proj = nn.Linear(F_in, d_model)
+        self.context_fusion = context_fusion
+        self.flow_dim = flow_dim
+        self.weather_dim = weather_dim
+        self.time_dim = (max(0, F_in - flow_dim - weather_dim)
+                         if time_dim is None else time_dim)
+        if flow_dim + self.time_dim + self.weather_dim != F_in:
+            raise ValueError(
+                f"F_in={F_in} must equal flow_dim={flow_dim} + "
+                f"time_dim={self.time_dim} + "
+                f"weather_dim={self.weather_dim}"
+            )
+        self.input_proj = nn.Linear(
+            flow_dim if context_fusion == "gated" else F_in, d_model
+        )
+        self.time_proj = None
+        if context_fusion == "gated" and self.time_dim:
+            self.time_proj = nn.Sequential(
+                nn.LayerNorm(self.time_dim),
+                nn.Linear(self.time_dim, d_model),
+            )
+        self.weather_proj = None
+        if context_fusion == "gated" and self.weather_dim:
+            self.weather_proj = nn.Sequential(
+                nn.LayerNorm(self.weather_dim),
+                nn.Linear(self.weather_dim, d_model),
+            )
+        self.static_proj = None
+        if static_features is not None:
+            if static_features.ndim != 2 or static_features.shape[0] != N:
+                raise ValueError(
+                    f"static_features must have shape (N, F), got "
+                    f"{tuple(static_features.shape)}"
+                )
+            self.register_buffer("static_features", static_features.float())
+            self.static_proj = nn.Sequential(
+                nn.LayerNorm(static_features.shape[1]),
+                nn.Linear(static_features.shape[1], d_model),
+            )
+        else:
+            self.register_buffer("static_features", None)
+        n_contexts = (int(self.time_proj is not None) +
+                      int(self.weather_proj is not None) +
+                      int(self.static_proj is not None))
+        self.context_merge = None
+        self.context_gate = None
+        if context_fusion == "gated" and n_contexts:
+            self.context_merge = nn.Linear(n_contexts * d_model, d_model)
+            self.context_gate = nn.Linear(2 * d_model, d_model)
         self.pos_enc    = SinusoidalPE(d_model, max_len=T_in + 1)
         self.drop       = nn.Dropout(dropout)
 
@@ -135,13 +197,26 @@ class AGFormer(nn.Module):
         # 取最后时刻 → 预测 T_out 步
         self.fc1 = nn.Linear(d_model, d_model)
         self.fc2 = nn.Linear(d_model, T_out)
+        self.linear_head = nn.Linear(T_in, T_out) if use_linear_output else None
+        self.future_time_proj = None
+        self.future_gate = None
+        self.future_out = None
+        if future_time_dim:
+            self.future_time_proj = nn.Sequential(
+                nn.LayerNorm(future_time_dim),
+                nn.Linear(future_time_dim, d_model),
+            )
+            self.future_gate = nn.Linear(2 * d_model, d_model)
+            self.future_out = nn.Linear(d_model, 1)
 
-        # 稠密邻接矩阵缓存（第一次 forward 时计算）
-        self.register_buffer("_A_hat", None)
+        # 各预定义图的归一化稠密邻接缓存；融合权重保持可学习。
+        for i in range(len(self.graph_names)):
+            self.register_buffer(f"_A_hat_{i}", None)
 
         params = sum(p.numel() for p in self.parameters()) / 1e6
         print(f"[AGFormer] N={N}  T_in={T_in}  T_out={T_out}  "
               f"d={d_model}  heads={n_heads}  layers={num_layers}  "
+              f"graphs={self.graph_names}  linear={use_linear_output}  "
               f"params={params:.3f}M")
 
     @property
@@ -149,26 +224,68 @@ class AGFormer(nn.Module):
         return F.softmax(F.relu(self.E1 @ self.E2.T), dim=-1)
 
     def _get_A_hat(self, graphs: dict) -> torch.Tensor:
-        if self._A_hat is None:
-            g = graphs['spatial']
-            self._A_hat = _sym_norm_adj(g['edge_index'], g.get('edge_weight'), self.N)
-        return self._A_hat
+        matrices = []
+        for i, name in enumerate(self.graph_names):
+            if name not in graphs:
+                raise ValueError(f"AGFormer 缺少图结构 graphs['{name}']")
+            cache_name = f"_A_hat_{i}"
+            matrix = getattr(self, cache_name)
+            if matrix is None:
+                g = graphs[name]
+                matrix = _sym_norm_adj(
+                    g['edge_index'], g.get('edge_weight'), self.N
+                )
+                setattr(self, cache_name, matrix)
+            matrices.append(matrix)
+        if len(matrices) == 1:
+            return matrices[0]
+        weights = torch.softmax(self.graph_logits, dim=0)
+        return sum(w * matrix for w, matrix in zip(weights, matrices))
 
     def forward(self, x: torch.Tensor,
                 graphs: dict | None = None) -> torch.Tensor:
         """
         x      : (B, N, T_in, F_in)
-        graphs : 须含 'spatial' 键
+        graphs : 须含 ``graph_names`` 指定的图
         """
-        if graphs is None or 'spatial' not in graphs:
-            raise ValueError("AGFormer 需要 graphs['spatial']")
+        future_time = None
+        if isinstance(x, (tuple, list)):
+            x, future_time = x
+        if graphs is None:
+            raise ValueError("AGFormer 需要图结构")
 
         A_hat = self._get_A_hat(graphs)
         A_ada = self.adaptive_adj
 
         # 输入投影 + 位置编码
         B, N, T, _ = x.shape
-        h = self.drop(self.input_proj(x))           # (B, N, T, d_model)
+        if self.context_fusion == "gated":
+            h_flow = self.input_proj(x[..., :self.flow_dim])
+            contexts = []
+            if self.time_proj is not None:
+                contexts.append(self.time_proj(
+                    x[..., self.flow_dim:self.flow_dim + self.time_dim]
+                ))
+            if self.weather_proj is not None:
+                start = self.flow_dim + self.time_dim
+                contexts.append(self.weather_proj(x[..., start:start + self.weather_dim]))
+            if self.static_proj is not None:
+                static = self.static_proj(self.static_features).view(1, N, 1, -1)
+                contexts.append(static.expand(B, -1, T, -1))
+            if contexts:
+                context = self.context_merge(torch.cat(contexts, dim=-1))
+                gate = torch.sigmoid(self.context_gate(
+                    torch.cat([h_flow, context], dim=-1)
+                ))
+                h = h_flow + gate * context
+            else:
+                h = h_flow
+            h = self.drop(h)
+        else:
+            h = self.drop(self.input_proj(x))       # (B, N, T, d_model)
+            if self.static_proj is not None:
+                static = self.static_proj(self.static_features).view(1, N, 1, -1)
+                h = h + static
 
         # 位置编码作用在时序维度
         h = h.view(B * N, T, -1)
@@ -180,5 +297,23 @@ class AGFormer(nn.Module):
             h = block(h, A_hat, A_ada)              # (B, N, T, d_model)
 
         # 取最后时刻预测
-        out = F.gelu(self.fc1(h[:, :, -1, :]))     # (B, N, d_model)
-        return self.fc2(out)                         # (B, N, T_out)
+        node_state = F.gelu(self.fc1(h[:, :, -1, :]))  # (B, N, d_model)
+        if self.future_time_proj is not None:
+            if future_time is None:
+                raise ValueError("future_time context is required by this AGFormer")
+            if future_time.shape[1:] != (self.T_out, self.future_time_dim):
+                raise ValueError(
+                    f"future_time must have shape (B, {self.T_out}, "
+                    f"{self.future_time_dim}), got {tuple(future_time.shape)}"
+                )
+            future = self.future_time_proj(future_time)  # (B, T_out, d)
+            node = node_state.unsqueeze(2).expand(-1, -1, self.T_out, -1)
+            future = future.unsqueeze(1).expand(-1, N, -1, -1)
+            gate = torch.sigmoid(self.future_gate(torch.cat([node, future], dim=-1)))
+            decoded = node + gate * future
+            out = self.future_out(F.gelu(decoded)).squeeze(-1)
+        else:
+            out = self.fc2(node_state)                    # (B, N, T_out)
+        if self.linear_head is not None:
+            out = out + self.linear_head(x[..., 0])
+        return out

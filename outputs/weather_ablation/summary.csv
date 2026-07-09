@@ -1,0 +1,3 @@
+model,tag,MAE,RMSE,MAPE
+agformer,calendar_context_seed42,17.8542,32.3708,42.67
+agformer,calendar_weather_seed42,17.8316,32.2941,40.97

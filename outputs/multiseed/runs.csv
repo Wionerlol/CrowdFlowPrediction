@@ -1,0 +1,7 @@
+experiment,model,seed,MAE,RMSE,MAPE
+agformer_context,agformer,42,16.535,30.1288,37.35
+agformer_context,agformer,123,17.0904,31.2337,37.84
+agformer_context,agformer,2026,17.1873,31.2791,38.46
+lstm_gapaware,lstm,42,19.6515,37.0815,35.64
+lstm_gapaware,lstm,123,19.4318,36.7325,34.27
+lstm_gapaware,lstm,2026,19.399,36.8277,34.01
