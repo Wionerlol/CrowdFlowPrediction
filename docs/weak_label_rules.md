@@ -68,6 +68,29 @@ def generate_level_b_labels(inflow, slot_mu, slot_sig, outflow=None):
     return labels   # 预期正例率 ~1.5~2%
 ```
 
+### Week5 当前实现说明（2026-08-03）
+
+当前代码实现对 Level-B 做了两点加固：
+
+1. outflow 不再复用 inflow 的 `slot_mu/slot_sig`，而是单独在训练集 outflow 上拟合时槽统计；
+2. 为了让 Level-B 成为比 Level-A 更高可信的子集，当前配置使用更严格的 outflow 条件：
+
+```yaml
+level_b_outflow_z: 3.0
+level_b_min_outflow_cells: 25
+```
+
+在当前 TaxiBJ test 窗口上，弱标签正例率为：
+
+| 标签 | high | low | bidirectional |
+|------|-----:|----:|--------------:|
+| Level-A | 6.69% | 12.46% | 19.47% |
+| Level-B | 1.89% | 10.52% | 12.56% |
+
+注意：原始 Level-A/Level-B 仍然以 `high` 作为主报告口径；`low` 和
+`bidirectional` 是 Week5 新增的评估口径，用于解释低流量异常和双向异常对
+timestep F1 的影响。
+
 ### Level-C：节假日校验标签（最高可信度，数量少）
 
 利用 `BJ_Holiday.txt` 节假日信息，在已知大节假日（春节、国庆、五一）前后 ±2 天的 L2+ 异常，直接标记为 **高可信正例**（label=2）：

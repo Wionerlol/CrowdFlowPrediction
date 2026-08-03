@@ -1,0 +1,275 @@
+{
+  "city": "bj",
+  "device": "cuda",
+  "num_test_windows": 4022,
+  "horizon": 1,
+  "fusion": {
+    "weights": {
+      "statistical": 0.7,
+      "reconstruction": 0.2,
+      "prediction": 0.1
+    },
+    "decision_threshold": 0.56,
+    "min_event_cells": 6,
+    "selected_on": "validation",
+    "evaluated_on": "test"
+  },
+  "weak_label_rules": {
+    "level_A": {
+      "source": "inflow",
+      "direction": "high",
+      "label_mode": "z_only",
+      "z_thresh": 3.0,
+      "min_high_cells": 12
+    },
+    "level_B": {
+      "source": "inflow_and_outflow",
+      "direction": "high",
+      "label_mode": "z_only",
+      "inflow_z_thresh": 3.0,
+      "min_high_cells": 12,
+      "outflow_z_thresh": 3.0,
+      "min_outflow_cells": 25
+    }
+  },
+  "event_building": {
+    "merge_by_time_continuity": true,
+    "use_spatial_continuity": true,
+    "spatial_iou_threshold": 0.05,
+    "centroid_distance_threshold": 4.0,
+    "classification_features": [
+      "aspect_ratio",
+      "road_density",
+      "in_out_imbalance",
+      "duration_trend",
+      "cluster_count"
+    ]
+  },
+  "method_time_positive_rates": {
+    "statistical": 0.41770263550472403,
+    "reconstruction": 0.2779711586275485,
+    "prediction": 0.06563898557931377,
+    "fusion": 0.08801591248135256
+  },
+  "weak_label_positive_rates": {
+    "level_A": 0.0668821481849826,
+    "level_B": 0.018896071606166086
+  },
+  "metrics_vs_weak_labels": {
+    "statistical": {
+      "level_A": {
+        "precision": 0.1601190476190476,
+        "recall": 1.0,
+        "f1": 0.27603899435608,
+        "tp": 269,
+        "fp": 1411,
+        "fn": 0,
+        "tn": 2342,
+        "positive_rate": 0.41770263550472403
+      },
+      "level_B": {
+        "precision": 0.04523809523809524,
+        "recall": 1.0,
+        "f1": 0.08656036446469248,
+        "tp": 76,
+        "fp": 1604,
+        "fn": 0,
+        "tn": 2342,
+        "positive_rate": 0.41770263550472403
+      }
+    },
+    "reconstruction": {
+      "level_A": {
+        "precision": 0.14311270125223613,
+        "recall": 0.5947955390334573,
+        "f1": 0.23071377072819035,
+        "tp": 160,
+        "fp": 958,
+        "fn": 109,
+        "tn": 2795,
+        "positive_rate": 0.2779711586275485
+      },
+      "level_B": {
+        "precision": 0.03398926654740608,
+        "recall": 0.5,
+        "f1": 0.06365159128978225,
+        "tp": 38,
+        "fp": 1080,
+        "fn": 38,
+        "tn": 2866,
+        "positive_rate": 0.2779711586275485
+      }
+    },
+    "prediction": {
+      "level_A": {
+        "precision": 0.13257575757575757,
+        "recall": 0.13011152416356878,
+        "f1": 0.13133208255159476,
+        "tp": 35,
+        "fp": 229,
+        "fn": 234,
+        "tn": 3524,
+        "positive_rate": 0.06563898557931377
+      },
+      "level_B": {
+        "precision": 0.03409090909090909,
+        "recall": 0.11842105263157894,
+        "f1": 0.05294117647058823,
+        "tp": 9,
+        "fp": 255,
+        "fn": 67,
+        "tn": 3691,
+        "positive_rate": 0.06563898557931377
+      }
+    },
+    "fusion": {
+      "level_A": {
+        "precision": 0.4322033898305085,
+        "recall": 0.5687732342007435,
+        "f1": 0.4911717495987159,
+        "tp": 153,
+        "fp": 201,
+        "fn": 116,
+        "tn": 3552,
+        "positive_rate": 0.08801591248135256
+      },
+      "level_B": {
+        "precision": 0.192090395480226,
+        "recall": 0.8947368421052632,
+        "f1": 0.3162790697674419,
+        "tp": 68,
+        "fp": 286,
+        "fn": 8,
+        "tn": 3660,
+        "positive_rate": 0.08801591248135256
+      }
+    }
+  },
+  "events": {
+    "count": 131,
+    "by_type": {
+      "mass_gathering": 14,
+      "traffic_jam": 6,
+      "sudden_incident": 111
+    },
+    "path": "outputs/week5_anomaly/events.csv",
+    "explainability_path": "outputs/week5_anomaly/event_explainability.csv"
+  },
+  "artifacts": {
+    "scores": "outputs/week5_anomaly/scores.npz",
+    "config": "outputs/week5_anomaly/config_used.yaml",
+    "events": "outputs/week5_anomaly/events.csv",
+    "event_explainability": "outputs/week5_anomaly/event_explainability.csv",
+    "vae_checkpoint": "outputs/week5_anomaly/checkpoints/vae.pt",
+    "transformer_checkpoint": "outputs/week5_anomaly/checkpoints/transformer_ae.pt"
+  },
+  "reconstruction": {
+    "vae": {
+      "city": "bj",
+      "data_path": "data/processed/taxibj_clean.npz",
+      "data_shape": [
+        22484,
+        2,
+        32,
+        32
+      ],
+      "split_info": {
+        "train_len": 15738,
+        "val_len": 2249,
+        "test_len": 4497
+      },
+      "input_dim": 1024,
+      "scaler_mean_hash": "5e7ba17ce770d70a",
+      "scaler_std_hash": "48e24d94180eb003",
+      "train_in_hash": "82312abe3c6854b3",
+      "label_rule_params": {
+        "source": "inflow_and_outflow",
+        "direction": "high",
+        "label_mode": "z_only",
+        "inflow_z_thresh": 3.0,
+        "min_high_cells": 12,
+        "outflow_z_thresh": 3.0,
+        "min_outflow_cells": 25
+      },
+      "label_rule_hash": "a1f3426a56cff000",
+      "train_weak_label_length": 15738,
+      "train_weak_label_positive_count": 199,
+      "train_on_weak_normal": true,
+      "hidden_dim": 256,
+      "latent_dim": 32,
+      "dropout": 0.1,
+      "lr": 0.001,
+      "weight_decay": 0.0001,
+      "batch_size": 256,
+      "epochs": 20,
+      "patience": 5,
+      "beta": 0.0001,
+      "model_type": "vae",
+      "weak_normal_vector_count": 15539,
+      "model_config_hash": "7b205a6af98dc5dd",
+      "best_val_loss": 0.16054613060421413,
+      "epochs_ran": 20,
+      "trained": true,
+      "loaded_from": "outputs/week5_anomaly/checkpoints/vae.pt"
+    },
+    "transformer": {
+      "city": "bj",
+      "data_path": "data/processed/taxibj_clean.npz",
+      "data_shape": [
+        22484,
+        2,
+        32,
+        32
+      ],
+      "split_info": {
+        "train_len": 15738,
+        "val_len": 2249,
+        "test_len": 4497
+      },
+      "input_dim": 1024,
+      "scaler_mean_hash": "5e7ba17ce770d70a",
+      "scaler_std_hash": "48e24d94180eb003",
+      "train_in_hash": "82312abe3c6854b3",
+      "label_rule_params": {
+        "source": "inflow_and_outflow",
+        "direction": "high",
+        "label_mode": "z_only",
+        "inflow_z_thresh": 3.0,
+        "min_high_cells": 12,
+        "outflow_z_thresh": 3.0,
+        "min_outflow_cells": 25
+      },
+      "label_rule_hash": "a1f3426a56cff000",
+      "train_weak_label_length": 15738,
+      "train_weak_label_positive_count": 199,
+      "train_on_weak_normal": true,
+      "seq_len": 12,
+      "d_model": 64,
+      "n_heads": 4,
+      "num_layers": 2,
+      "dim_feedforward": 128,
+      "dropout": 0.1,
+      "lr": 0.001,
+      "weight_decay": 0.0001,
+      "batch_size": 64,
+      "epochs": 12,
+      "patience": 4,
+      "model_type": "transformer_autoencoder",
+      "weak_normal_window_count": 14933,
+      "train_sequence_count": 14933,
+      "model_config_hash": "9b357b8d0cf7542f",
+      "best_val_loss": 0.11060348483068602,
+      "epochs_ran": 12,
+      "trained": true,
+      "loaded_from": "outputs/week5_anomaly/checkpoints/transformer_ae.pt"
+    }
+  },
+  "prediction": {
+    "members": [
+      "agformer_gate_context_linear_seed42",
+      "agformer_gate_context_linear_seed7",
+      "agformer_gate_context_linear_seed21",
+      "agformer_gate_context_linear_seed123"
+    ]
+  }
+}

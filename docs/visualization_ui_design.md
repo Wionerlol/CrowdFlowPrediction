@@ -552,32 +552,19 @@ def render_attention(grid_id, timestamp, city_code):
 
 | 级别 | 颜色 | 触发条件 | UI 表现 | 声音 |
 |------|------|---------|---------|------|
-| L1 轻度 | 🟡 黄色 | z>3.0，≥6格 | 侧栏橙色提示条 | 无 |
-| L2 中度 | 🟠 橙色 | z>3.0，≥12格 | 顶部横幅 + 地图闪烁边框 | 无 |
-| L3 重度 | 🔴 红色 | z>3.5，≥12格 | 弹窗 + 持续橙色横幅 | 短促提示音（1次） |
-| L4 极端 | 🚨 紫色 | z>4.0，≥25格 | 强制弹窗 + 全屏红色边框 | 持续警报音 |
+| 一般 | 🟡 黄色 | Week5 severity ∈ {1,2} | 侧栏告警列表 + 地图 marker | 无 |
+| 重要 | 🟠 橙色 | Week5 severity = 3 | 弹窗 + 顶部横幅 + 地图高亮 | 无 |
+| 紧急 | 🔴 红色 | Week5 severity = 4 | 强制弹窗 + 红色横幅 + 地图高亮 | 提示音 |
+
+说明：Week5 仍保留 1–4 级研究用 `severity`；Week6 UI/API 暴露 3 级业务预警。映射逻辑见 `docs/week6_alerting_design.md` 和 `src/alerts/levels.py`。
 
 ### 4.2 告警弹窗实现
 
 ```python
-def show_alert(level, clusters, timestamp):
-    LEVEL_CONFIG = {
-        1: {"emoji": "🟡", "color": "#FFA500", "title": "L1 轻度异常"},
-        2: {"emoji": "🟠", "color": "#FF6B00", "title": "L2 中度异常"},
-        3: {"emoji": "🔴", "color": "#FF0000", "title": "L3 重度异常"},
-        4: {"emoji": "🚨", "color": "#8B0000", "title": "L4 极端异常 — 请立即关注"},
-    }
-    cfg = LEVEL_CONFIG[level]
+def show_alert(alert):
+    msg = alert["alert_message"]
 
-    # Streamlit 原生弹窗（通过 st.warning / st.error）
-    msg = (
-        f"**{cfg['emoji']} {cfg['title']}** | "
-        f"时间: {timestamp.strftime('%Y-%m-%d %H:%M')} | "
-        f"影响格子: {sum(c['cell_count'] for c in clusters)} | "
-        f"最大Z值: {max(c['max_z'] for c in clusters):.2f}"
-    )
-
-    if level >= 3:
+    if alert["alert_level"] == "urgent":
         st.error(msg)
         # 声音通知（HTML5 Audio）
         sound_html = """
@@ -586,19 +573,14 @@ def show_alert(level, clusters, timestamp):
         </audio>
         """
         st.components.v1.html(sound_html, height=0)
-    elif level == 2:
+    elif alert["alert_level"] == "important":
         st.warning(msg)
     else:
         st.info(msg)
 
     # 详细信息展开
-    with st.expander(f"查看 {len(clusters)} 个异常区域详情"):
-        for i, cluster in enumerate(clusters):
-            st.markdown(
-                f"**区域 {i+1}**: 中心坐标 ({cluster['center_lon']:.4f}, "
-                f"{cluster['center_lat']:.4f}), "
-                f"{cluster['cell_count']} 格, 最大 Z={cluster['max_z']:.2f}"
-            )
+    with st.expander("查看异常事件详情"):
+        st.json(alert)
 ```
 
 ---

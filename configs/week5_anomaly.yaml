@@ -1,0 +1,84 @@
+city: bj
+data_path: data/processed/taxibj_clean.npz
+output_dir: outputs/week5_anomaly
+seed: 42
+
+grid_shape: [32, 32]
+steps_per_day: 48
+tz_offset: 8
+
+# Align prediction-error detection with Week 4 AGFormer windows.
+T_in: 48
+T_out: 48
+horizon: 1
+filter_gaps: true
+
+statistical:
+  sigma_z: 3.0
+  iqr_factor: 1.5
+  min_std: 1.0
+  weak_label_min_cells: 12
+  level_b_outflow_z: 3.0
+  level_b_min_outflow_cells: 25
+
+reconstruction:
+  train_on_weak_normal: true
+  threshold_quantile: 0.995
+  checkpoint_dir: outputs/week5_anomaly/checkpoints
+  force_train: false
+  vae:
+    hidden_dim: 256
+    latent_dim: 32
+    dropout: 0.1
+    lr: 0.001
+    weight_decay: 0.0001
+    batch_size: 256
+    epochs: 20
+    patience: 5
+    beta: 0.0001
+  transformer:
+    seq_len: 12
+    d_model: 64
+    n_heads: 4
+    num_layers: 2
+    dim_feedforward: 128
+    dropout: 0.1
+    lr: 0.001
+    weight_decay: 0.0001
+    batch_size: 64
+    epochs: 12
+    patience: 4
+
+prediction:
+  threshold_quantile: 0.995
+  batch_size: 8
+  num_workers: 2
+  ensemble_tags:
+    - agformer_gate_context_linear_seed42
+    - agformer_gate_context_linear_seed7
+    - agformer_gate_context_linear_seed21
+    - agformer_gate_context_linear_seed123
+
+fusion:
+  # Tuned by scripts/tune_week5_fusion.py: select on validation weak labels,
+  # evaluate once on test weak labels. The high-precision setting keeps all
+  # three method families active and avoids collapsing to the statistical label
+  # source.
+  weights:
+    statistical: 0.70
+    reconstruction: 0.20
+    prediction: 0.10
+  decision_threshold: 0.56
+  min_event_cells: 6
+
+events:
+  # Keep time-contiguous event grouping, but avoid merging adjacent timesteps
+  # when the spatial footprint clearly jumps to a different area.
+  use_spatial_continuity: true
+  spatial_iou_threshold: 0.05
+  centroid_distance_threshold: 4.0
+
+audit:
+  high_confidence_events: 20
+  borderline_events: 15
+  weak_false_positive_events: 15

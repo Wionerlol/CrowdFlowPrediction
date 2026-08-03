@@ -1,0 +1,33 @@
+input_events: outputs/week5_anomaly/events.csv
+output_dir: outputs/week6_alerts
+
+# Product-facing 3-level warning mechanism aligned with Week 5 severity.
+# Week 5 keeps raw research severity 1..4; Week 6 exposes 3 UI/API levels.
+levels:
+  general:
+    id: 1
+    name_zh: 一般
+    week5_severities: [1, 2]
+    color: "#F59E0B"
+    ui_behavior: sidebar_badge
+    popup: false
+    sound: false
+    action_hint: 记录并观察事件走势；在历史异常列表中展示。
+  important:
+    id: 2
+    name_zh: 重要
+    week5_severities: [3]
+    color: "#F97316"
+    ui_behavior: popup_and_banner
+    popup: true
+    sound: false
+    action_hint: 弹窗提示并高亮地图区域；建议运营人员核查原因。
+  urgent:
+    id: 3
+    name_zh: 紧急
+    week5_severities: [4]
+    color: "#DC2626"
+    ui_behavior: modal_banner_and_sound
+    popup: true
+    sound: true
+    action_hint: 强制弹窗、红色横幅和声音提示；建议立即处置。

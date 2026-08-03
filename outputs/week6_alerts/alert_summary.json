@@ -1,0 +1,68 @@
+{
+  "input_events": "outputs/week5_anomaly/events.csv",
+  "alerts": "outputs/week6_alerts/alerts.csv",
+  "config": "outputs/week6_alerts/config_used.yaml",
+  "level_mapping": {
+    "general": {
+      "id": 1,
+      "name_zh": "一般",
+      "week5_severities": [
+        1,
+        2
+      ],
+      "popup": false,
+      "sound": false,
+      "ui_behavior": "sidebar_badge"
+    },
+    "important": {
+      "id": 2,
+      "name_zh": "重要",
+      "week5_severities": [
+        3
+      ],
+      "popup": true,
+      "sound": false,
+      "ui_behavior": "popup_and_banner"
+    },
+    "urgent": {
+      "id": 3,
+      "name_zh": "紧急",
+      "week5_severities": [
+        4
+      ],
+      "popup": true,
+      "sound": true,
+      "ui_behavior": "modal_banner_and_sound"
+    }
+  },
+  "total_alerts": 131,
+  "by_level": {
+    "general": 110,
+    "important": 15,
+    "urgent": 6
+  },
+  "by_level_zh": {
+    "一般": 110,
+    "重要": 15,
+    "紧急": 6
+  },
+  "by_level_and_event_type": {
+    "mass_gathering": {
+      "general": 2,
+      "important": 7,
+      "urgent": 5
+    },
+    "sudden_incident": {
+      "general": 106,
+      "important": 4,
+      "urgent": 1
+    },
+    "traffic_jam": {
+      "general": 2,
+      "important": 4,
+      "urgent": 0
+    }
+  },
+  "popup_alerts": 21,
+  "sound_alerts": 6
+}

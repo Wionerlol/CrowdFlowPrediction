@@ -1,0 +1,134 @@
+{
+  "mode": "batch",
+  "config": "configs/week6_pipeline.yaml",
+  "device": "cuda",
+  "started_at": "2026-08-03T18:28:07+00:00",
+  "ended_at": "2026-08-03T18:28:07+00:00",
+  "stages": [
+    {
+      "name": "data_preprocessing",
+      "status": "ok",
+      "started_at": "2026-08-03T18:28:07+00:00",
+      "ended_at": "2026-08-03T18:28:07+00:00",
+      "duration_seconds": 3.695487976074219e-05,
+      "artifacts": {
+        "data/processed/taxibj_clean.npz": {
+          "exists": true,
+          "size_bytes": 69285630
+        },
+        "data/processed/taxinyc_clean.npz": {
+          "exists": true,
+          "size_bytes": 4074889
+        },
+        "data/processed/weather_bj_30min.csv": {
+          "exists": true,
+          "size_bytes": 3453062
+        },
+        "data/processed/weather_nyc_30min.csv": {
+          "exists": true,
+          "size_bytes": 1220928
+        }
+      },
+      "message": "required artifacts validated"
+    },
+    {
+      "name": "feature_engineering",
+      "status": "ok",
+      "started_at": "2026-08-03T18:28:07+00:00",
+      "ended_at": "2026-08-03T18:28:07+00:00",
+      "duration_seconds": 6.0558319091796875e-05,
+      "artifacts": {
+        "data/processed/node_features_bj.npy": {
+          "exists": true,
+          "size_bytes": 168064
+        },
+        "data/processed/graph_spatial_bj.pt": {
+          "exists": true,
+          "size_bytes": 158189
+        },
+        "data/processed/graph_flow_bj.pt": {
+          "exists": true,
+          "size_bytes": 306965
+        },
+        "data/processed/graph_poi_bj.pt": {
+          "exists": true,
+          "size_bytes": 206733
+        },
+        "data/processed/graph_transit_bj.pt": {
+          "exists": true,
+          "size_bytes": 63533
+        },
+        "data/processed/grid_coords_bj.npy": {
+          "exists": true,
+          "size_bytes": 16512
+        },
+        "data/processed/grid_meta_bj.csv": {
+          "exists": true,
+          "size_bytes": 93484
+        }
+      },
+      "message": "required artifacts validated"
+    },
+    {
+      "name": "model_inference_and_anomaly_detection",
+      "status": "ok",
+      "started_at": "2026-08-03T18:28:07+00:00",
+      "ended_at": "2026-08-03T18:28:07+00:00",
+      "duration_seconds": 2.47955322265625e-05,
+      "artifacts": {
+        "outputs/week5_anomaly/summary.json": {
+          "exists": true,
+          "size_bytes": 7321
+        },
+        "outputs/week5_anomaly/scores.npz": {
+          "exists": true,
+          "size_bytes": 153792830
+        },
+        "outputs/week5_anomaly/events.csv": {
+          "exists": true,
+          "size_bytes": 79234
+        },
+        "outputs/week5_anomaly/event_explainability.csv": {
+          "exists": true,
+          "size_bytes": 69765
+        }
+      },
+      "message": "required artifacts validated"
+    },
+    {
+      "name": "alert_generation",
+      "status": "ok",
+      "started_at": "2026-08-03T18:28:07+00:00",
+      "ended_at": "2026-08-03T18:28:07+00:00",
+      "duration_seconds": 0.3536221981048584,
+      "artifacts": {
+        "log": "outputs/week6_pipeline/logs/batch_week6_alerts.log"
+      },
+      "message": "return_code=0"
+    },
+    {
+      "name": "alert_generation_artifacts",
+      "status": "ok",
+      "started_at": "2026-08-03T18:28:07+00:00",
+      "ended_at": "2026-08-03T18:28:07+00:00",
+      "duration_seconds": 8.58306884765625e-05,
+      "artifacts": {
+        "outputs/week6_alerts/alerts.csv": {
+          "exists": true,
+          "size_bytes": 116352
+        },
+        "outputs/week6_alerts/alert_summary.json": {
+          "exists": true,
+          "size_bytes": 1313
+        }
+      },
+      "message": "required artifacts validated"
+    }
+  ],
+  "outputs": {
+    "week5_summary": "outputs/week5_anomaly/summary.json",
+    "week5_events": "outputs/week5_anomaly/events.csv",
+    "week6_alerts": "outputs/week6_alerts/alerts.csv",
+    "week6_alert_summary": "outputs/week6_alerts/alert_summary.json"
+  }
+}

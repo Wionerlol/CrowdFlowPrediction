@@ -1,0 +1,400 @@
+{
+  "scores": "outputs/week5_anomaly/scores.npz",
+  "config": "outputs/week5_anomaly/config_used.yaml",
+  "num_windows": 4022,
+  "min_cells": 6,
+  "event_tolerance_steps": 1,
+  "direction_assignment": "Method detections are split into high/low by the observed inflow slot-normalized z-score sign; bidirectional uses the original mask.",
+  "label_positive_rates": {
+    "high": {
+      "level_A": 0.0668821481849826,
+      "level_B": 0.018896071606166086
+    },
+    "low": {
+      "level_A": 0.12456489308801591,
+      "level_B": 0.1051715564395823
+    },
+    "bidirectional": {
+      "level_A": 0.19467926404773744,
+      "level_B": 0.12555942317255098
+    }
+  },
+  "method_direction_positive_rates": {
+    "statistical": {
+      "high": 0.2585778219791149,
+      "low": 0.14743908503232223,
+      "bidirectional": 0.41770263550472403
+    },
+    "reconstruction": {
+      "high": 0.18498259572352063,
+      "low": 0.044256588761810045,
+      "bidirectional": 0.2779711586275485
+    },
+    "prediction": {
+      "high": 0.034808552958727,
+      "low": 0.0174042764793635,
+      "bidirectional": 0.06563898557931377
+    },
+    "fusion": {
+      "high": 0.04748881153654898,
+      "low": 0.039781203381402286,
+      "bidirectional": 0.08801591248135256
+    }
+  },
+  "best_timestep_rows_by_direction": {
+    "high": {
+      "method": "fusion",
+      "direction": "high",
+      "label_level": "level_A",
+      "precision": 0.8010471204188482,
+      "recall": 0.5687732342007435,
+      "f1": 0.6652173913043479,
+      "tp": 153,
+      "fp": 38,
+      "fn": 116,
+      "tn": 3715,
+      "positive_rate": 0.04748881153654898
+    },
+    "low": {
+      "method": "statistical",
+      "direction": "low",
+      "label_level": "level_A",
+      "precision": 0.8448566610455311,
+      "recall": 1.0,
+      "f1": 0.9159049360146252,
+      "tp": 501,
+      "fp": 92,
+      "fn": 0,
+      "tn": 3429,
+      "positive_rate": 0.14743908503232223
+    },
+    "bidirectional": {
+      "method": "statistical",
+      "direction": "bidirectional",
+      "label_level": "level_A",
+      "precision": 0.4660714285714286,
+      "recall": 1.0,
+      "f1": 0.6358099878197321,
+      "tp": 783,
+      "fp": 897,
+      "fn": 0,
+      "tn": 2342,
+      "positive_rate": 0.41770263550472403
+    }
+  },
+  "best_event_rows_by_direction": {
+    "high": {
+      "method": "fusion",
+      "direction": "high",
+      "label_level": "level_A",
+      "event_precision": 0.631578947368421,
+      "event_recall": 0.5405405405405406,
+      "event_f1": 0.5825242718446602,
+      "event_hit_rate": 0.5405405405405406,
+      "matched_true_events": 60,
+      "matched_pred_events": 60,
+      "true_event_count": 111,
+      "pred_event_count": 95,
+      "mean_detection_delay_steps": 0.3333333333333333,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.16666666666666666,
+      "mean_abs_duration_error_steps": 1.7166666666666666,
+      "mean_abs_duration_error_hours": 0.8583333333333333
+    },
+    "low": {
+      "method": "statistical",
+      "direction": "low",
+      "label_level": "level_A",
+      "event_precision": 0.6721311475409836,
+      "event_recall": 0.803921568627451,
+      "event_f1": 0.7321428571428572,
+      "event_hit_rate": 0.803921568627451,
+      "matched_true_events": 41,
+      "matched_pred_events": 41,
+      "true_event_count": 51,
+      "pred_event_count": 61,
+      "mean_detection_delay_steps": 0.0,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.0,
+      "mean_abs_duration_error_steps": 4.2439024390243905,
+      "mean_abs_duration_error_hours": 2.1219512195121952
+    },
+    "bidirectional": {
+      "method": "fusion",
+      "direction": "bidirectional",
+      "label_level": "level_A",
+      "event_precision": 0.5853658536585366,
+      "event_recall": 0.43636363636363634,
+      "event_f1": 0.5,
+      "event_hit_rate": 0.43636363636363634,
+      "matched_true_events": 72,
+      "matched_pred_events": 72,
+      "true_event_count": 165,
+      "pred_event_count": 123,
+      "mean_detection_delay_steps": 1.7916666666666667,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.8958333333333334,
+      "mean_abs_duration_error_steps": 5.638888888888889,
+      "mean_abs_duration_error_hours": 2.8194444444444446
+    }
+  },
+  "fusion_rows": {
+    "timestep": [
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_A",
+        "precision": 0.8010471204188482,
+        "recall": 0.5687732342007435,
+        "f1": 0.6652173913043479,
+        "tp": 153,
+        "fp": 38,
+        "fn": 116,
+        "tn": 3715,
+        "positive_rate": 0.04748881153654898
+      },
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_B",
+        "precision": 0.35602094240837695,
+        "recall": 0.8947368421052632,
+        "f1": 0.5093632958801498,
+        "tp": 68,
+        "fp": 123,
+        "fn": 8,
+        "tn": 3823,
+        "positive_rate": 0.04748881153654898
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_A",
+        "precision": 1.0,
+        "recall": 0.3193612774451098,
+        "f1": 0.48411497730711045,
+        "tp": 160,
+        "fp": 0,
+        "fn": 341,
+        "tn": 3521,
+        "positive_rate": 0.039781203381402286
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_B",
+        "precision": 1.0,
+        "recall": 0.37825059101654845,
+        "f1": 0.5488850771869639,
+        "tp": 160,
+        "fp": 0,
+        "fn": 263,
+        "tn": 3599,
+        "positive_rate": 0.039781203381402286
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_A",
+        "precision": 0.8870056497175142,
+        "recall": 0.40102171136653897,
+        "f1": 0.5523306948109059,
+        "tp": 314,
+        "fp": 40,
+        "fn": 469,
+        "tn": 3199,
+        "positive_rate": 0.08801591248135256
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_B",
+        "precision": 0.652542372881356,
+        "recall": 0.45742574257425744,
+        "f1": 0.5378346915017462,
+        "tp": 231,
+        "fp": 123,
+        "fn": 274,
+        "tn": 3394,
+        "positive_rate": 0.08801591248135256
+      }
+    ],
+    "event_level": [
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_A",
+        "event_precision": 0.631578947368421,
+        "event_recall": 0.5405405405405406,
+        "event_f1": 0.5825242718446602,
+        "event_hit_rate": 0.5405405405405406,
+        "matched_true_events": 60,
+        "matched_pred_events": 60,
+        "true_event_count": 111,
+        "pred_event_count": 95,
+        "mean_detection_delay_steps": 0.3333333333333333,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.16666666666666666,
+        "mean_abs_duration_error_steps": 1.7166666666666666,
+        "mean_abs_duration_error_hours": 0.8583333333333333
+      },
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_B",
+        "event_precision": 0.2631578947368421,
+        "event_recall": 0.9259259259259259,
+        "event_f1": 0.40983606557377045,
+        "event_hit_rate": 0.9259259259259259,
+        "matched_true_events": 25,
+        "matched_pred_events": 25,
+        "true_event_count": 27,
+        "pred_event_count": 95,
+        "mean_detection_delay_steps": 0.0,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.0,
+        "mean_abs_duration_error_steps": 2.2,
+        "mean_abs_duration_error_hours": 1.1
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_A",
+        "event_precision": 0.5172413793103449,
+        "event_recall": 0.29411764705882354,
+        "event_f1": 0.37500000000000006,
+        "event_hit_rate": 0.29411764705882354,
+        "matched_true_events": 15,
+        "matched_pred_events": 15,
+        "true_event_count": 51,
+        "pred_event_count": 29,
+        "mean_detection_delay_steps": 7.133333333333334,
+        "median_detection_delay_steps": 7.0,
+        "mean_detection_delay_hours": 3.566666666666667,
+        "mean_abs_duration_error_steps": 19.466666666666665,
+        "mean_abs_duration_error_hours": 9.733333333333333
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_B",
+        "event_precision": 0.5172413793103449,
+        "event_recall": 0.42857142857142855,
+        "event_f1": 0.46875000000000006,
+        "event_hit_rate": 0.42857142857142855,
+        "matched_true_events": 15,
+        "matched_pred_events": 15,
+        "true_event_count": 35,
+        "pred_event_count": 29,
+        "mean_detection_delay_steps": 5.733333333333333,
+        "median_detection_delay_steps": 5.0,
+        "mean_detection_delay_hours": 2.8666666666666667,
+        "mean_abs_duration_error_steps": 17.066666666666666,
+        "mean_abs_duration_error_hours": 8.533333333333333
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_A",
+        "event_precision": 0.5853658536585366,
+        "event_recall": 0.43636363636363634,
+        "event_f1": 0.5,
+        "event_hit_rate": 0.43636363636363634,
+        "matched_true_events": 72,
+        "matched_pred_events": 72,
+        "true_event_count": 165,
+        "pred_event_count": 123,
+        "mean_detection_delay_steps": 1.7916666666666667,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.8958333333333334,
+        "mean_abs_duration_error_steps": 5.638888888888889,
+        "mean_abs_duration_error_hours": 2.8194444444444446
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_B",
+        "event_precision": 0.3089430894308943,
+        "event_recall": 0.6129032258064516,
+        "event_f1": 0.41081081081081083,
+        "event_hit_rate": 0.6129032258064516,
+        "matched_true_events": 38,
+        "matched_pred_events": 38,
+        "true_event_count": 62,
+        "pred_event_count": 123,
+        "mean_detection_delay_steps": 2.263157894736842,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 1.131578947368421,
+        "mean_abs_duration_error_steps": 8.473684210526315,
+        "mean_abs_duration_error_hours": 4.2368421052631575
+      }
+    ]
+  },
+  "event_paths": {
+    "fusion": {
+      "high": {
+        "count": 95,
+        "by_type": {
+          "mass_gathering": 5,
+          "traffic_jam": 6,
+          "sudden_incident": 84
+        },
+        "path": "outputs/week5_anomaly/evaluation/events_fusion_high.csv"
+      },
+      "low": {
+        "count": 29,
+        "by_type": {
+          "mass_gathering": 10,
+          "traffic_jam": 0,
+          "sudden_incident": 19
+        },
+        "path": "outputs/week5_anomaly/evaluation/events_fusion_low.csv"
+      },
+      "bidirectional": {
+        "count": 123,
+        "by_type": {
+          "mass_gathering": 14,
+          "traffic_jam": 6,
+          "sudden_incident": 103
+        },
+        "path": "outputs/week5_anomaly/evaluation/events_fusion_bidirectional.csv"
+      }
+    },
+    "weak_labels": {
+      "high": {
+        "level_A": {
+          "count": 111,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_high.csv"
+        },
+        "level_B": {
+          "count": 27,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_high.csv"
+        }
+      },
+      "low": {
+        "level_A": {
+          "count": 51,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_low.csv"
+        },
+        "level_B": {
+          "count": 35,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_low.csv"
+        }
+      },
+      "bidirectional": {
+        "level_A": {
+          "count": 165,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_bidirectional.csv"
+        },
+        "level_B": {
+          "count": 62,
+          "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_bidirectional.csv"
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "directional_timestep_metrics": "outputs/week5_anomaly/evaluation/directional_timestep_metrics.csv",
+    "event_level_metrics": "outputs/week5_anomaly/evaluation/event_level_metrics.csv"
+  }
+}

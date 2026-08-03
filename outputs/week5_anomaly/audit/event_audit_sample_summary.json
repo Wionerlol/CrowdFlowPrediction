@@ -1,0 +1,16 @@
+{
+  "events": "outputs/week5_anomaly/events.csv",
+  "scores": "outputs/week5_anomaly/scores.npz",
+  "decision_threshold": 0.56,
+  "requested": {
+    "high_confidence": 20,
+    "borderline": 15,
+    "false_positive_by_weak_label": 15
+  },
+  "actual_counts": {
+    "high_confidence": 20,
+    "borderline": 15,
+    "false_positive_by_weak_label": 15
+  },
+  "output_csv": "outputs/week5_anomaly/audit/event_audit_sample_50.csv"
+}

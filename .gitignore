@@ -50,6 +50,15 @@ lightning_logs/
 *.log
 logs/
 tensorboard_logs/
+outputs/run_pids/
+outputs/week5_anomaly_smoke/
+outputs/week5_anomaly/scores.npz
+outputs/week5_anomaly/tuned_fusion/*.npz
+outputs/week5_anomaly/tuned_fusion/fusion_grid.csv
+outputs/week6_pipeline/realtime/scores.npz
+
+# ── Codex / agent 本地配置 ──────────────────────────────────
+.codex/
 
 # ── OS 产生的文件 ────────────────────────────────────────────
 .DS_Store
