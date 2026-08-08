@@ -1,0 +1,23 @@
+{
+  "tag": "agformer_multigraph_context_seed42",
+  "source_checkpoint": "outputs/checkpoints/agformer_multigraph_context_seed42/best.pt",
+  "graph_names": [
+    "spatial",
+    "poi",
+    "flow",
+    "transit"
+  ],
+  "graph_logits": [
+    -0.6050090789794922,
+    -3.4631073474884033,
+    1.9210011959075928,
+    -6.342185020446777
+  ],
+  "weight_method": "softmax(graph_logits)",
+  "weights_percent": [
+    7.372389793395996,
+    0.4230113625526428,
+    92.18083953857422,
+    0.02376754768192768
+  ]
+}

@@ -2,6 +2,7 @@
 
 **项目名称**：基于多源时空数据融合的城市级人流异常检测与预警系统  
 **报告日期**：2026-07-09  
+**可视化与选型修订日期**：2026-08-09<br>
 **报告阶段**：第四周 — 时空预测模型训练、消融实验与 Week5 异常检测基线选型
 
 ---
@@ -131,6 +132,10 @@ NVIDIA GeForce RTX 5080 Laptop GPU
 | AGFormer Time+Static 3-seed avg | 16.9376 | 30.8805 | 37.88 | 明显优于 LSTM |
 | AGFormer gated context seed42 | 16.5350 | 30.1288 | 37.35 | Week4 前期最佳单模型 |
 
+![LSTM 与 AGFormer 基线多随机种子结果](week4_figures/fig3_1_baseline_multiseed.png)
+
+<p class="figure-caption">图 3-1　LSTM 与 AGFormer 基线的多随机种子结果。圆点保留每个 seed 的真实取值，误差棒为样本标准差；gated context 目前只有 seed42，故不绘制误差棒。</p>
+
 AGFormer 的优势主要来自：
 
 1. 显式 spatial graph 先验；
@@ -165,6 +170,10 @@ AGFormer 的优势主要来自：
 | no future + linear output | 17.0688 | 32.6759 | 37.65 | linear residual 明显有效 |
 | no future + linear + gated | 17.3247 | 33.8161 | 35.33 | MAPE 改善，MAE/RMSE 变差 |
 
+![Spacetimeformer 结构对齐与组件消融](week4_figures/fig3_2_spacetimeformer_ablation.png)
+
+<p class="figure-caption">图 3-2　Spacetimeformer 系列的结构对齐与组件消融。各实验均为 seed42，颜色仅标出每项指标下的系列最优值，不代表多 seed 置信区间。</p>
+
 结论：
 
 - Spacetimeformer 经过原版式结构修正后仍未超过 AGFormer；
@@ -181,7 +190,11 @@ Week4 还测试了多类外生特征和图结构增强。
 | Calendar context | 17.8542 | 32.3708 | 42.67 | 完善日历后 MAE 未改善 |
 | Calendar + Weather | 17.8316 | 32.2941 | 40.97 | 天气仅有很小改善 |
 | Multi-graph AGFormer | 16.9569 | 30.8844 | 37.81 | 多图全局融合未超过单图 |
-| Periodic lags | 17.9614 | 33.2339 | 39.52 | lag_48/lag_336/delta 组合无效 |
+| Periodic lags | 17.9614 | 33.2339 | 39.52 | 3,433 个匹配窗口；lag_48/lag_336/delta 组合无效 |
+
+![外生特征、图结构与周期滞后实验](week4_figures/fig3_3_feature_ablation.png)
+
+<p class="figure-caption">图 3-3　外生特征、图结构与周期滞后实验的 avg MAE。周期滞后会减少有效窗口，因此右图使用相同 3,433 个测试窗口上的原 AGFormer 基线（MAE 16.2443）作严格对照。</p>
 
 多图实验中，模型学习到的图权重大致为：
 
@@ -191,6 +204,10 @@ spatial graph ≈  7.37%
 poi graph     ≈  0.42%
 transit graph ≈  0.02%
 ```
+
+![Multi-graph AGFormer 图融合权重](week4_figures/fig3_4_multigraph_weights.png)
+
+<p class="figure-caption">图 3-4　Multi-graph AGFormer 最优 checkpoint 的全局图融合权重。权重由 graph logits 经 softmax 计算，模型明显由 flow graph 主导。</p>
 
 这说明当前简单全局图融合策略下，模型几乎退化为使用 flow graph，未能有效利用 POI/transit 结构。该方向后续若继续推进，应改为节点级/头级/层级动态图融合，而不是全局 softmax 融合。
 
@@ -232,6 +249,10 @@ Horizon 结果：
 | h12 | 14.6130 | 26.3245 | 37.21 |
 | avg | 16.1132 | 30.3198 | 36.91 |
 
+![Linear residual head 的累计 horizon 结果](week4_figures/fig4_1_linear_horizon.png)
+
+<p class="figure-caption">图 4-1　相同 seed42 下，原 AGFormer gated context 与加入 linear residual head 后的累计预测误差。横轴各点均为截至对应预测范围的累计平均，24h 为完整 48 步平均。</p>
+
 结论：
 
 - MAE 明显改善；
@@ -254,9 +275,13 @@ Horizon 结果：
 
 | 指标 | mean | std |
 |------|-----:|----:|
-| MAE | 16.4962 | 0.2850 |
+| MAE | 16.4961 | 0.2850 |
 | RMSE | 31.1725 | 0.5840 |
-| MAPE | 37.8175 | 1.2597 |
+| MAPE | 37.8177 | 1.2623 |
+
+![AGFormer linear 四随机种子复验](week4_figures/fig4_2_linear_multiseed.png)
+
+<p class="figure-caption">图 4-2　AGFormer + linear 的四随机种子复验。散点展示 seed42/7/21/123 的 avg 指标，水平线和阴影分别表示均值与 mean ± population std。</p>
 
 结论：
 
@@ -305,6 +330,10 @@ ensemble_pred = mean(pred_seed42, pred_seed7, pred_seed21, pred_seed123)
 | AGFormer + linear seed42 | 16.1132 | 30.3198 | 36.91 |
 | **AGFormer + linear 4-seed ensemble** | **15.9030** | **30.2250** | **35.44** |
 
+![四个单模型与 Ensemble 的累计 horizon 误差](week4_figures/fig5_1_ensemble_horizon.png)
+
+<p class="figure-caption">图 5-1　同一 4,022 个测试窗口上，四个单 seed 模型与预测均值 Ensemble 的累计 horizon 指标。灰线为各成员，蓝线为 ensemble。</p>
+
 结论：
 
 - Ensemble 进一步降低 MAE；
@@ -325,6 +354,10 @@ ensemble_pred = mean(pred_seed42, pred_seed7, pred_seed21, pred_seed123)
 | p95 | 55.0564 |
 | p99 | 119.7054 |
 
+![Ensemble 绝对残差尾部分位数](week4_figures/fig5_2_residual_quantiles.png)
+
+<p class="figure-caption">图 5-2　单模型与 Ensemble 的绝对残差尾部分位数。由于全测试残差规模很大，分位数按评估脚本使用最多 5,000,000 个等距样本估计；mean/std 使用全部残差计算。</p>
+
 这些统计量可直接作为 Week5 异常检测阈值设计的起点。例如：
 
 ```text
@@ -342,7 +375,53 @@ score = |y - y_hat| / residual_scale[node, time_slot]
 
 ## 六、最终模型选择
 
-### 6.1 Week5 主模型
+### 6.1 同窗口最终候选对比
+
+最终候选均采用真实时间编码、gap-aware 连续窗口过滤，并在同一 **4,022 个测试窗口**上评估。下表中的百分比表示 avg MAE 相对 `AGFormer gated context seed42` 的变化，负值代表改善。
+
+| 模型 | 统计口径 | 单模型参数量 | avg MAE（相对基线） | avg RMSE | avg MAPE |
+|------|----------|-------------:|---------------------:|---------:|---------:|
+| LSTM gap-aware | 3-seed 指标均值 | 0.054 M | 19.4941（+17.90%） | 36.8806 | **34.64** |
+| AGFormer Time+Static | 3-seed 指标均值 | 0.050 M | 16.9376（+2.43%） | 30.8805 | 37.88 |
+| AGFormer gated context | seed42 | 0.050 M | 16.5350（基线） | **30.1288** | 37.35 |
+| Spacetimeformer no future + linear | seed42 | 0.091 M | 17.0688（+3.23%） | 32.6759 | 37.65 |
+| Spacetimeformer no future + linear + gated | seed42 | 0.095 M | 17.3247（+4.78%） | 33.8161 | 35.33 |
+| AGFormer gated + linear | seed42 | 0.052 M | 16.1132（−2.55%） | 30.3198 | 36.91 |
+| **AGFormer gated + linear ensemble** | **4-seed 预测均值** | **4 × 0.052 M** | **15.9030（−3.82%）** | 30.2250 | 35.44 |
+
+其中“3-seed 指标均值”用于描述训练稳定性，并不等同于把三个模型的预测做 ensemble；只有最后一行执行了逐样本预测均值。
+
+![Week5 最终候选模型对比](week4_figures/fig6_1_final_model_selection.png)
+
+<p class="figure-caption">图 6-1　Week5 预测残差基线的最终候选模型对比。左图同时展示 MAE、RMSE 与 MAPE；右图以原 AGFormer gated seed42 为基线展示 MAE 相对变化。左下方向代表 MAE/RMSE 更优。</p>
+
+该比较揭示了三个不能被单一指标掩盖的权衡：
+
+1. **Ensemble 的 MAE 最低**，比原 AGFormer gated 降低 3.82%，最有利于压低正常时段的预测残差底噪；
+2. **原 AGFormer gated 的 RMSE 仍最低**，ensemble 的 RMSE 高 0.0962，约 0.32%，因此 ensemble 并非在所有指标上绝对支配；
+3. **LSTM 的 3-seed 平均 MAPE 最低**，Spacetimeformer gated 的 MAPE 也略低于 ensemble，但二者的 MAE/RMSE 明显更差。由于 Week5 以绝对预测残差为主要异常信号，不能仅凭 MAPE 选主模型。
+
+### 6.2 精度、稳定性与部署成本
+
+Linear residual head 的四个 seed 平均 MAE 为 `16.4961 ± 0.2850`；原 AGFormer Time+Static 的三个 seed 为 `16.9376 ± 0.3520`。这支持 linear head 的收益具有跨 seed 一致性，但两组 seed 集合及标准差口径并不完全相同，因此这里只作为稳定性证据，不作为严格配对显著性检验。
+
+最终部署成本比较如下。推理次数是理论 forward-pass 数量，不是实测延迟；四模型可以串行执行以节省显存，也可以并行执行以降低墙钟时间。
+
+| 方案 | 每批推理次数 | 总存储参数量 | avg MAE | 相对 AGFormer+linear seed42 | 适用场景 |
+|------|-------------:|-------------:|--------:|----------------------------:|----------|
+| AGFormer gated seed42 | 1 | 0.050 M | 16.5350 | +2.62% | 保留最低 RMSE 的审计基线 |
+| Spacetimeformer + linear seed42 | 1 | 0.091 M | 17.0688 | +5.93% | 架构对照，不建议作为主部署模型 |
+| **AGFormer + linear seed42** | **1** | **0.052 M** | **16.1132** | **基线** | 低延迟、低显存单模型部署 |
+| **AGFormer + linear 4-seed ensemble** | **4** | **约 0.210 M** | **15.9030** | **−1.30%** | Week5 离线/批量异常检测主模型 |
+
+相对最优单模型 seed42，ensemble 进一步改善：
+
+- MAE：降低约 **1.30%**；
+- RMSE：降低约 **0.31%**；
+- MAPE：降低约 **3.99%**；
+- 代价：需要保存并执行 4 个 checkpoint，理论计算量约为单模型的 4 倍。
+
+### 6.3 Week5 主模型与降级方案
 
 推荐主模型：
 
@@ -359,13 +438,17 @@ AGFormer + gated context + linear residual head + 4-seed mean ensemble
 5. ensemble 可降低异常检测中的正常残差噪声；
 6. 四个 checkpoint 已训练完成，可直接进入 Week5 残差生成。
 
-### 6.2 备选模型
+若 Week6 API 的实时延迟或显存预算不允许四模型 ensemble，则采用 `AGFormer + linear seed42` 作为降级方案。它只需一次推理，MAE 仅比 ensemble 高 0.2102，同时仍优于原 AGFormer gated。
+
+最终角色划分如下：
 
 | 用途 | 模型 | 说明 |
 |------|------|------|
-| 单模型部署 | AGFormer + linear seed42 | 单模型 MAE 最优，推理成本低 |
-| 低流量相对误差参考 | Spacetimeformer gated variant | MAPE 较好，但 MAE/RMSE 不如 AGFormer |
-| 传统深度基线 | LSTM gap-aware | MAPE 较好，可用于报告对照 |
+| Week5 主预测残差 | AGFormer + linear 4-seed ensemble | MAE 最低，优先保证异常残差底噪 |
+| 实时/资源受限降级 | AGFormer + linear seed42 | 单模型 MAE 最优，只需一次推理 |
+| RMSE 审计参考 | 原 AGFormer gated seed42 | RMSE 最低，用于检查尖峰误差权衡 |
+| 相对误差参考 | Spacetimeformer linear + gated | MAPE 35.33，但 MAE/RMSE 不适合作主模型 |
+| 传统深度基线 | LSTM gap-aware | 3-seed 平均 MAPE 最低，但绝对误差明显偏高 |
 
 ---
 
@@ -379,6 +462,7 @@ AGFormer + gated context + linear residual head + 4-seed mean ensemble
 | `src/models/spacetimeformer.py` | 重构为更接近原版 Spacetimeformer 的 encoder-decoder/local-global attention 结构 |
 | `scripts/train.py` | 支持 AGFormer/Spacetimeformer 新配置字段 |
 | `scripts/evaluate_agformer_linear_ensemble.py` | 新增多 seed ensemble 评估脚本 |
+| `scripts/generate_week4_report.py` | 从保留的实验结果生成第 3–5 章图表，并重建 HTML/PDF 报告 |
 
 ### 7.2 关键配置文件
 
@@ -397,6 +481,7 @@ AGFormer + gated context + linear residual head + 4-seed mean ensemble
 |------|------|
 | `outputs/results/week3_metrics.csv` | 所有训练结果汇总 |
 | `outputs/results/agformer_gate_context_linear_ensemble_4seed.json` | ensemble 评估与残差统计 |
+| `outputs/results/agformer_multigraph_weights.json` | 多图 checkpoint 的 graph logits 与 softmax 权重快照 |
 | `outputs/checkpoints/agformer_gate_context_linear_seed42/best.pt` | 最优单模型 checkpoint |
 | `outputs/checkpoints/agformer_gate_context_linear_seed7/best.pt` | ensemble 成员 |
 | `outputs/checkpoints/agformer_gate_context_linear_seed21/best.pt` | ensemble 成员 |
@@ -518,4 +603,3 @@ avg MAE  = 15.9030
 avg RMSE = 30.2250
 avg MAPE = 35.44
 ```
-
