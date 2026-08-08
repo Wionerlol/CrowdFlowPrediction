@@ -6,12 +6,20 @@ import base64
 from datetime import date, datetime, time
 import io
 import math
+from pathlib import Path
 import struct
+import sys
 import wave
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
+# Streamlit executes this file as a script and only guarantees that the script
+# directory is importable. Add the repository root before importing `src`.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.visualization.api_client import ApiError, Week6ApiClient
 from src.visualization.kepler_maps import event_map_html, flow_map_html
