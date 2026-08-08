@@ -102,6 +102,34 @@ def build_split_dataset(
     return ds, target_abs.astype(np.int64), target_ts
 
 
+def _select_window_range(
+    ds: FlowDataset,
+    target_abs: np.ndarray,
+    target_ts: np.ndarray,
+    *,
+    max_windows: int | None,
+    window_start: int,
+) -> tuple[FlowDataset | Subset, np.ndarray, np.ndarray, int, int]:
+    """Select a bounded range from a split dataset without changing ordering."""
+
+    eval_ds: FlowDataset | Subset = ds
+    if max_windows is not None and int(max_windows) <= 0:
+        raise ValueError(f"max_windows must be positive when provided, got {max_windows}")
+    start = int(window_start)
+    if start < 0:
+        start = max(len(ds) + start, 0)
+    if start >= len(ds):
+        raise ValueError(f"window_start={window_start} resolves to {start}, exceeds {len(ds)}")
+    stop = len(ds) if max_windows is None else min(start + int(max_windows), len(ds))
+    if stop <= start:
+        raise ValueError(f"Selected empty window range [{start}, {stop}), len={len(ds)}")
+    if start != 0 or stop != len(ds):
+        eval_ds = Subset(ds, range(start, stop))
+        target_abs = target_abs[start:stop]
+        target_ts = target_ts[start:stop]
+    return eval_ds, target_abs, target_ts, start, stop
+
+
 def load_model_from_checkpoint(
     tag: str,
     *,
@@ -161,23 +189,13 @@ def predict_ensemble_horizon(
     std = float(first["std"])
 
     ds, target_abs, target_ts = build_split_dataset(base_cfg, split, mean=mean, std=std)
-    eval_ds = ds
-    if max_windows is not None and int(max_windows) <= 0:
-        raise ValueError(f"max_windows must be positive when provided, got {max_windows}")
-    start = int(window_start)
-    if start < 0:
-        start = max(len(ds) + start, 0)
-    if start >= len(ds):
-        raise ValueError(f"window_start={window_start} resolves to {start}, exceeds {len(ds)}")
-    stop = len(ds) if max_windows is None else min(start + int(max_windows), len(ds))
-    if stop <= start:
-        raise ValueError(
-            f"Selected empty window range [{start}, {stop}) from split={split}, len={len(ds)}"
-        )
-    if start != 0 or stop != len(ds):
-        eval_ds = Subset(ds, range(start, stop))
-        target_abs = target_abs[start:stop]
-        target_ts = target_ts[start:stop]
+    eval_ds, target_abs, target_ts, _, _ = _select_window_range(
+        ds,
+        target_abs,
+        target_ts,
+        max_windows=max_windows,
+        window_start=window_start,
+    )
     loader = DataLoader(
         eval_ds,
         batch_size=batch_size or int(base_cfg.get("batch", 8)),
@@ -227,6 +245,111 @@ def predict_ensemble_horizon(
         "pred": pred_ensemble,
         "true": true_np,
         "residual": residual,
+        "members": members,
+        "cfg": base_cfg,
+    }
+
+
+@torch.no_grad()
+def predict_ensemble_sequence(
+    tags: list[str],
+    *,
+    split: str = "test",
+    batch_size: int | None = None,
+    num_workers: int | None = None,
+    device: torch.device | str = "cpu",
+    max_windows: int | None = 1,
+    window_start: int = -1,
+) -> dict[str, Any]:
+    """Predict all horizons from one or more common forecast origins.
+
+    ``pred`` and ``true`` have shape ``(B, N, T_out)``. ``timestamps`` and
+    ``target_indices`` have shape ``(B, T_out)`` so callers cannot confuse
+    this same-origin forecast with a sequence of independently issued h1
+    predictions.
+    """
+
+    if not tags:
+        raise ValueError("At least one checkpoint tag is required")
+
+    device = torch.device(device)
+    first = torch.load(
+        ROOT / "outputs/checkpoints" / tags[0] / "best.pt",
+        map_location="cpu",
+        weights_only=False,
+    )
+    base_cfg = first["cfg"]
+    mean = float(first["mean"])
+    std = float(first["std"])
+    city = str(base_cfg.get("city", "bj"))
+
+    ds, first_target_abs, first_target_ts = build_split_dataset(
+        base_cfg,
+        split,
+        mean=mean,
+        std=std,
+    )
+    eval_ds, _, _, start, stop = _select_window_range(
+        ds,
+        first_target_abs,
+        first_target_ts,
+        max_windows=max_windows,
+        window_start=window_start,
+    )
+    loader = DataLoader(
+        eval_ds,
+        batch_size=batch_size or int(base_cfg.get("batch", 8)),
+        shuffle=False,
+        num_workers=int(num_workers if num_workers is not None else base_cfg.get("num_workers", 2)),
+        pin_memory=device.type == "cuda",
+    )
+    graphs = load_graphs(
+        city,
+        base_cfg.get("graphs", ["spatial"]),
+        device=device,
+    )
+
+    pred_sum = None
+    true_ref = None
+    members = []
+    for tag in tags:
+        model, cfg, ckpt_mean, ckpt_std, path = load_model_from_checkpoint(tag, device=device)
+        if abs(ckpt_mean - mean) > 1e-6 or abs(ckpt_std - std) > 1e-6:
+            raise RuntimeError(f"Checkpoint {tag} uses different normalization stats")
+        preds = []
+        true = []
+        for x, y in loader:
+            preds.append(model(x.to(device), graphs).cpu())
+            true.append(y)
+        pred = torch.cat(preds, dim=0) * std + mean
+        true_cat = torch.cat(true, dim=0) * std + mean
+        pred_sum = pred if pred_sum is None else pred_sum + pred
+        if true_ref is None:
+            true_ref = true_cat
+        members.append(
+            {
+                "tag": tag,
+                "checkpoint": str(path.relative_to(ROOT)),
+                "cfg": cfg,
+            }
+        )
+
+    assert pred_sum is not None and true_ref is not None
+    _, split_timestamps, split_offset = get_split_arrays(city, split)
+    selected_starts = ds.valid_starts[start:stop]
+    horizon_offsets = np.arange(int(base_cfg["T_out"]), dtype=np.int64)
+    relative_target_indices = (
+        selected_starts[:, None] + int(base_cfg["T_in"]) + horizon_offsets[None, :]
+    )
+    target_indices = split_offset + relative_target_indices
+    target_timestamps = split_timestamps[relative_target_indices]
+
+    return {
+        "split": split,
+        "target_indices": target_indices.astype(np.int64),
+        "timestamps": target_timestamps,
+        "pred": (pred_sum / len(tags)).numpy().astype(np.float32),
+        "true": true_ref.numpy().astype(np.float32),
         "members": members,
         "cfg": base_cfg,
     }

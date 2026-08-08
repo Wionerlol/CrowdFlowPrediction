@@ -75,6 +75,8 @@ AGFormer + gated context + linear residual head + 4-seed ensemble
 
 在 realtime 模式中，pipeline 直接调用 `predict_ensemble_horizon(..., window_start, max_windows)`，只对最新或指定的一小段窗口做推理，避免重跑全量测试集。
 
+为支持 Web 端“未来 24 小时预测动画”，realtime pipeline 还会调用 `predict_ensemble_sequence(...)`，从最新有效 forecast origin 一次输出完整 48 步。该序列与滚动 h1 结果分开保存，避免把 48 个不同起点的 h1 预测误当成同一起点的 24 小时预测。
+
 ### 4. 异常检测阶段
 
 实时模式中复用 Week5 当前规则：
@@ -191,6 +193,7 @@ realtime:
 outputs/week6_pipeline/realtime/summary.json
 outputs/week6_pipeline/realtime/time_summary.csv
 outputs/week6_pipeline/realtime/scores.npz
+outputs/week6_pipeline/realtime/forecast_24h.npz
 outputs/week6_pipeline/realtime/events.csv
 outputs/week6_pipeline/realtime/alerts.csv
 ```
@@ -200,6 +203,7 @@ outputs/week6_pipeline/realtime/alerts.csv
 | 文件 | 含义 |
 |------|------|
 | `time_summary.csv` | 每个实时窗口的融合分数、异常网格数、预测残差摘要 |
+| `forecast_24h.npz` | 最新共同预测起点的 48-step AGFormer ensemble 预测，供动画/API 使用 |
 | `events.csv` | 当前微批内合并出的异常事件 |
 | `alerts.csv` | 当前微批内的三档预警结果 |
 | `summary.json` | pipeline stage 状态、窗口范围、事件/预警计数 |

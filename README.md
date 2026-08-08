@@ -171,10 +171,16 @@ CrowdFlowPrediction/
   - G_transit 轨道线路拓扑图（北京3080边，纽约754边）
   - 量化/TensorRT 加速预研报告、可视化界面设计文档
 
-- [ ] **Week 3**：基础时空预测模型（ARIMA / LSTM / GCN）
-- [ ] **Week 4**：高级模型（STGCN / STAEformer / Spacetimeformer）
-- [ ] **Week 5**：异常检测算法集成
-- [ ] **Week 6**：系统集成与可视化
+- [x] **Week 3**：基础时空预测模型（ARIMA / LSTM / GCN）
+- [x] **Week 4**：高级模型训练、消融与最终预测基线选型
+- [x] **Week 5**：统计 / 重构 / 预测误差异常检测、融合、事件分类与三级预警对齐
+- [x] **Week 6**：系统集成与可视化
+  - 端到端 batch/realtime pipeline 与 AGFormer 四 seed ensemble 推理
+  - FastAPI 预测、异常检测、事件、预警和历史统计接口
+  - Streamlit + Kepler.gl 实时热力图、异常事件地图与详情
+  - 同一预测起点的未来 24 小时（48 帧）预测动画
+  - 一般 / 重要 / 紧急三级预警，支持弹窗、横幅和紧急声音提示
+  - 启动方式与接口说明见 [`docs/week6_web_app.md`](docs/week6_web_app.md)
 - [ ] **Week 7**：模型优化与可解释性分析
 - [ ] **Week 8**：项目总结与演示
 

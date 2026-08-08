@@ -52,6 +52,7 @@
   },
   "artifacts": {
     "scores": "outputs/week6_pipeline/realtime/scores.npz",
+    "forecast_24h": "outputs/week6_pipeline/realtime/forecast_24h.npz",
     "time_summary": "outputs/week6_pipeline/realtime/time_summary.csv",
     "events": "outputs/week6_pipeline/realtime/events.csv",
     "alerts": "outputs/week6_pipeline/realtime/alerts.csv"
@@ -60,9 +61,9 @@
     {
       "name": "realtime_preprocessing_artifacts",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:11+00:00",
-      "ended_at": "2026-08-03T18:28:11+00:00",
-      "duration_seconds": 8.678436279296875e-05,
+      "started_at": "2026-08-08T17:58:37+00:00",
+      "ended_at": "2026-08-08T17:58:37+00:00",
+      "duration_seconds": 7.724761962890625e-05,
       "artifacts": {
         "data/processed/taxibj_clean.npz": {
           "exists": true,
@@ -90,9 +91,9 @@
     {
       "name": "load_calibration",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:11+00:00",
-      "ended_at": "2026-08-03T18:28:11+00:00",
-      "duration_seconds": 0.00980234146118164,
+      "started_at": "2026-08-08T17:58:37+00:00",
+      "ended_at": "2026-08-08T17:58:37+00:00",
+      "duration_seconds": 0.009497404098510742,
       "artifacts": {
         "scores": "outputs/week5_anomaly/scores.npz"
       },
@@ -101,9 +102,9 @@
     {
       "name": "load_data",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:11+00:00",
-      "ended_at": "2026-08-03T18:28:11+00:00",
-      "duration_seconds": 0.5608375072479248,
+      "started_at": "2026-08-08T17:58:37+00:00",
+      "ended_at": "2026-08-08T17:58:37+00:00",
+      "duration_seconds": 0.5509834289550781,
       "artifacts": {
         "shape": [
           22484,
@@ -119,20 +120,31 @@
     {
       "name": "model_inference",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:11+00:00",
-      "ended_at": "2026-08-03T18:28:13+00:00",
-      "duration_seconds": 1.8090691566467285,
+      "started_at": "2026-08-08T17:58:37+00:00",
+      "ended_at": "2026-08-08T17:58:39+00:00",
+      "duration_seconds": 1.588393211364746,
       "artifacts": {
         "windows": 4
       },
       "message": "predicted selected realtime windows"
     },
     {
+      "name": "forecast_24h_inference",
+      "status": "ok",
+      "started_at": "2026-08-08T17:58:39+00:00",
+      "ended_at": "2026-08-08T17:58:40+00:00",
+      "duration_seconds": 1.5209991931915283,
+      "artifacts": {
+        "horizon_steps": 48
+      },
+      "message": "predicted one common-origin 24-hour sequence"
+    },
+    {
       "name": "statistical_detection",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:13+00:00",
-      "ended_at": "2026-08-03T18:28:15+00:00",
-      "duration_seconds": 1.680640459060669,
+      "started_at": "2026-08-08T17:58:40+00:00",
+      "ended_at": "2026-08-08T17:58:42+00:00",
+      "duration_seconds": 1.7866301536560059,
       "artifacts": {
         "train_weak_positive_count": 199
       },
@@ -141,9 +153,9 @@
     {
       "name": "reconstruction_detection",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:15+00:00",
-      "ended_at": "2026-08-03T18:28:15+00:00",
-      "duration_seconds": 0.2973916530609131,
+      "started_at": "2026-08-08T17:58:42+00:00",
+      "ended_at": "2026-08-08T17:58:43+00:00",
+      "duration_seconds": 0.31592893600463867,
       "artifacts": {
         "vae_checkpoint": "outputs/week5_anomaly/checkpoints/vae.pt",
         "transformer_checkpoint": "outputs/week5_anomaly/checkpoints/transformer_ae.pt"
@@ -153,9 +165,9 @@
     {
       "name": "anomaly_event_building",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:15+00:00",
-      "ended_at": "2026-08-03T18:28:15+00:00",
-      "duration_seconds": 0.0034525394439697266,
+      "started_at": "2026-08-08T17:58:43+00:00",
+      "ended_at": "2026-08-08T17:58:43+00:00",
+      "duration_seconds": 0.003696918487548828,
       "artifacts": {
         "events": "outputs/week6_pipeline/realtime/events.csv",
         "event_count": 0
@@ -165,9 +177,9 @@
     {
       "name": "alert_generation",
       "status": "ok",
-      "started_at": "2026-08-03T18:28:15+00:00",
-      "ended_at": "2026-08-03T18:28:15+00:00",
-      "duration_seconds": 0.002418994903564453,
+      "started_at": "2026-08-08T17:58:43+00:00",
+      "ended_at": "2026-08-08T17:58:43+00:00",
+      "duration_seconds": 0.002346038818359375,
       "artifacts": {
         "alerts": "outputs/week6_pipeline/realtime/alerts.csv",
         "alert_count": 0

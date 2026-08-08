@@ -34,7 +34,11 @@ from scripts.run_week5_anomaly_detection import (
 )
 from src.alerts.levels import alert_levels_from_config, annotate_event_alerts, summarize_alerts
 from src.anomaly.fusion import confidence_from_threshold, fuse_weighted_vote
-from src.anomaly.prediction_error import load_city_data, predict_ensemble_horizon
+from src.anomaly.prediction_error import (
+    load_city_data,
+    predict_ensemble_horizon,
+    predict_ensemble_sequence,
+)
 from src.anomaly.reconstruction import score_transformer_targets, score_vae
 from src.anomaly.statistical import (
     build_events,
@@ -79,6 +83,33 @@ def json_default(obj: Any) -> Any:
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def atomic_savez(path: Path, **arrays: Any) -> None:
+    """Write an NPZ snapshot and atomically publish it to API readers."""
+
+    temp_path = path.with_name(f".{path.stem}.tmp{path.suffix}")
+    np.savez_compressed(temp_path, **arrays)
+    temp_path.replace(path)
+
+
+def atomic_to_csv(frame: pd.DataFrame, path: Path) -> None:
+    """Write a CSV snapshot without exposing a partially written file."""
+
+    temp_path = path.with_name(f".{path.name}.tmp")
+    frame.to_csv(temp_path, index=False)
+    temp_path.replace(path)
+
+
+def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
+    """Write a JSON snapshot without exposing a partially written file."""
+
+    temp_path = path.with_name(f".{path.name}.tmp")
+    temp_path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2, default=json_default),
+        encoding="utf-8",
+    )
+    temp_path.replace(path)
 
 
 def load_pipeline_config(path: str | Path) -> dict[str, Any]:
@@ -455,6 +486,26 @@ class Week6Pipeline:
 
         started_at = utc_now()
         start = time.time()
+        forecast = predict_ensemble_sequence(
+            list(pred_cfg["ensemble_tags"]),
+            split="test",
+            batch_size=int(pred_cfg.get("batch_size", 8)),
+            num_workers=int(pred_cfg.get("num_workers", 2)),
+            device=device,
+            max_windows=1,
+            window_start=int(realtime_cfg.get("forecast_window_start", -1)),
+        )
+        self._record_stage(
+            "forecast_24h_inference",
+            started_at,
+            start,
+            status="ok",
+            artifacts={"horizon_steps": int(forecast["pred"].shape[-1])},
+            message="predicted one common-origin 24-hour sequence",
+        )
+
+        started_at = utc_now()
+        start = time.time()
         stat_cfg = week5_cfg["statistical"]
         steps = int(week5_cfg["steps_per_day"])
         tz = int(week5_cfg["tz_offset"])
@@ -587,7 +638,7 @@ class Week6Pipeline:
         if events_df.empty:
             events_df = pd.DataFrame(columns=EVENT_COLUMNS)
         events_path = output_dir / "events.csv"
-        events_df.to_csv(events_path, index=False)
+        atomic_to_csv(events_df, events_path)
         self._record_stage(
             "anomaly_event_building",
             started_at,
@@ -610,7 +661,7 @@ class Week6Pipeline:
         else:
             alerts_df = pd.DataFrame(columns=ALERT_COLUMNS)
         alerts_path = output_dir / "alerts.csv"
-        alerts_df.to_csv(alerts_path, index=False)
+        atomic_to_csv(alerts_df, alerts_path)
         self._record_stage(
             "alert_generation",
             started_at,
@@ -621,7 +672,7 @@ class Week6Pipeline:
         )
 
         scores_path = output_dir / "scores.npz"
-        np.savez_compressed(
+        atomic_savez(
             scores_path,
             timestamps=pred["timestamps"],
             target_indices=test_idx,
@@ -637,6 +688,25 @@ class Week6Pipeline:
             fusion_score=fused["score"],
             fusion_mask=fused["mask"],
         )
+        forecast_path = output_dir / "forecast_24h.npz"
+        forecast_timestamps = forecast["timestamps"][0]
+        if len(forecast_timestamps) > 1:
+            forecast_step = forecast_timestamps[1] - forecast_timestamps[0]
+        else:
+            forecast_step = np.timedelta64(30, "m")
+        step_minutes = int(forecast_step / np.timedelta64(1, "m"))
+        if step_minutes <= 0:
+            raise RuntimeError(f"Invalid forecast timestep: {forecast_step}")
+        atomic_savez(
+            forecast_path,
+            city=np.asarray(str(week5_cfg.get("city", "bj"))),
+            origin_time=np.asarray(forecast_timestamps[0] - forecast_step),
+            step_minutes=np.asarray(step_minutes, dtype=np.int64),
+            timestamps=forecast_timestamps,
+            target_indices=forecast["target_indices"][0],
+            pred_flow=forecast["pred"][0].T,
+            member_tags=np.asarray(list(pred_cfg["ensemble_tags"])),
+        )
         time_summary = pd.DataFrame({
             "timestamp": pred["timestamps"].astype(str),
             "target_index": test_idx,
@@ -647,7 +717,7 @@ class Week6Pipeline:
             "max_prediction_residual": pred["residual"].max(axis=1),
         })
         time_summary_path = output_dir / "time_summary.csv"
-        time_summary.to_csv(time_summary_path, index=False)
+        atomic_to_csv(time_summary, time_summary_path)
 
         alert_summary = summarize_alerts(alerts_df) if len(alerts_df) else {
             "total_alerts": 0,
@@ -694,6 +764,7 @@ class Week6Pipeline:
             },
             "artifacts": {
                 "scores": str(scores_path),
+                "forecast_24h": str(forecast_path),
                 "time_summary": str(time_summary_path),
                 "events": str(events_path),
                 "alerts": str(alerts_path),
@@ -701,8 +772,5 @@ class Week6Pipeline:
             "stages": [stage.as_dict() for stage in self.stage_results],
         }
         summary_path = output_dir / "summary.json"
-        summary_path.write_text(
-            json.dumps(summary, ensure_ascii=False, indent=2, default=json_default),
-            encoding="utf-8",
-        )
+        atomic_write_json(summary_path, summary)
         return summary

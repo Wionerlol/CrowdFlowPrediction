@@ -1,0 +1,27 @@
+city: bj
+api:
+  host: 127.0.0.1
+  port: 8000
+  cors_origins:
+    - http://localhost:8501
+    - http://127.0.0.1:8501
+
+artifacts:
+  grid_meta: data/processed/grid_meta_bj.csv
+  realtime_summary: outputs/week6_pipeline/realtime/summary.json
+  realtime_scores: outputs/week6_pipeline/realtime/scores.npz
+  forecast_24h: outputs/week6_pipeline/realtime/forecast_24h.npz
+  realtime_alerts: outputs/week6_pipeline/realtime/alerts.csv
+  historical_scores: outputs/week5_anomaly/scores.npz
+  historical_alerts: outputs/week6_alerts/alerts.csv
+
+anomaly:
+  decision_threshold: 0.56
+  min_event_cells: 6
+  top_cells: 20
+
+ui:
+  api_url: http://127.0.0.1:8000/api/v1
+  refresh_seconds: 30
+  map_height: 570
+  default_history_source: historical

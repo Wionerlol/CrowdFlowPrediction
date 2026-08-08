@@ -51,6 +51,8 @@ realtime:
   output_dir: outputs/week6_pipeline/realtime
   window_start: -24
   window_count: 24
+  # A single latest, common-origin 48-step forecast used by the Web animation.
+  forecast_window_start: -1
   required_artifacts:
     - data/processed/taxibj_clean.npz
     - data/processed/node_features_bj.npy

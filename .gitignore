@@ -56,6 +56,7 @@ outputs/week5_anomaly/scores.npz
 outputs/week5_anomaly/tuned_fusion/*.npz
 outputs/week5_anomaly/tuned_fusion/fusion_grid.csv
 outputs/week6_pipeline/realtime/scores.npz
+outputs/week6_pipeline/realtime/forecast_24h.npz
 
 # ── Codex / agent 本地配置 ──────────────────────────────────
 .codex/
