@@ -209,10 +209,14 @@ fusion_score =
 
 融合参数在 validation weak labels 上选择，然后固定到 test 上评估。调参结果如下：
 
-| 方案 | 权重 stat/recon/pred | 阈值 | Level-A F1 | Level-B F1 | 事件数 | 说明 |
+| 方案 | 权重 stat/recon/pred | 阈值 | Test Level-A F1 | Test Level-B F1 | 事件数 | 说明 |
 |------|----------------------|-----:|-----------:|-----------:|------:|------|
 | best_f1_unconstrained | 0.60 / 0.20 / 0.20 | 0.51 | 0.5134 | 0.2558 | 207 | Level-A F1 最高，但 Level-B 精度更弱、事件偏多 |
 | high_precision_ge_0_70 | 0.70 / 0.20 / 0.10 | 0.56 | 0.4912 | 0.3163 | 131 | 更适合报告与后续人工核验 |
+
+![融合参数选择对比](week5_figures/fig4_1_fusion_selection.png)
+
+<p class="figure-caption">图 4-1　两套候选融合方案在 validation Level-A、test Level-A/Level-B 和事件数量上的对比。参数只在 validation 弱标签上选择；test 指标用于固定参数后的评估，不参与调参。</p>
 
 最终选择 high-precision 方案。原因是 Week5 的目标不是最大化弱标签 F1，而是输出可解释、可核验、事件数量可控的异常检测结果。该方案牺牲少量 Level-A F1，换来：
 
@@ -234,6 +238,10 @@ fusion_score =
 | prediction | 0.1326 | 0.1301 | 0.1313 | 0.0341 | 0.1184 | 0.0529 |
 | **fusion** | **0.4322** | **0.5688** | **0.4912** | **0.1921** | **0.8947** | **0.3163** |
 
+![三类异常检测方法与融合结果对比](week5_figures/fig5_1_method_comparison.png)
+
+<p class="figure-caption">图 5-1　统计、重构、预测误差与融合方法的 timestep 指标及检测覆盖率。F1 数值标在对应柱上；右图虚线为 Level-A/Level-B 弱标签正例率。</p>
+
 融合后的结果明显优于任一单方法。统计方法本身召回为 1.0，但 positive rate 高达 41.77%，无法直接作为最终检测结果；融合策略将 positive rate 压到 8.80%，同时保留较高 Level-B 召回。
 
 ### 5.2 high / low / bidirectional 方向拆分
@@ -250,6 +258,10 @@ fusion_score =
 | low | Level-B | 1.0000 | 0.3783 | 0.5489 |
 | bidirectional | Level-A | 0.8870 | 0.4010 | 0.5523 |
 | bidirectional | Level-B | 0.6525 | 0.4574 | 0.5378 |
+
+![Fusion 方向性 timestep 指标热力图](week5_figures/fig5_2_direction_heatmap.png)
+
+<p class="figure-caption">图 5-2　最终 fusion 在 high、low 和 bidirectional 三种方向下的 Precision、Recall 与 F1。Level-A 和 Level-B 分区展示，便于识别高召回与高精度口径的差异。</p>
 
 结论：
 
@@ -273,6 +285,10 @@ timestep F1 要求每个 30 分钟窗口逐点对齐，但异常检测更关心�
 | low | Level-B | 0.5172 | 0.4286 | 0.4688 | 2.87h |
 | bidirectional | Level-A | 0.5854 | 0.4364 | 0.5000 | 0.90h |
 | bidirectional | Level-B | 0.3089 | 0.6129 | 0.4108 | 1.13h |
+
+![Fusion timestep 与事件级评估对照](week5_figures/fig5_3_timestep_event.png)
+
+<p class="figure-caption">图 5-3　同一 fusion 输出在 timestep 与 event-level 口径下的 F1，以及事件首次命中的平均延迟。延迟只针对成功匹配的弱标签参考事件计算。</p>
 
 事件级结果说明：
 
@@ -331,6 +347,14 @@ cluster_count
 | traffic_jam | 6 | 4.6% |
 | sudden_incident | 111 | 84.7% |
 
+![融合异常事件类型与预警等级构成](week5_figures/fig6_1_event_profile.png)
+
+<p class="figure-caption">图 6-1　131 个融合异常事件的规则分类与 severity 分布。事件类型和等级都是算法输出，并非人工真值标签。</p>
+
+![不同事件类型的持续时间分布](week5_figures/fig6_2_event_duration.png)
+
+<p class="figure-caption">图 6-2　各规则分类事件的持续时间箱线图与真实样本点。mass_gathering 的持续时间整体更长；traffic_jam 仅有 6 个样本，应谨慎解读其分布。</p>
+
 相比早期版本，`traffic_jam` 不再全部为 0，说明分类规则已经能识别一部分带状、道路相关、持续性异常。不过当前 road_density 仍来自静态 node feature 的代理变量，后续如果需要更强交通拥堵识别，应接入真实路网线段或更精细的道路类型特征。
 
 ---
@@ -361,6 +385,10 @@ outputs/week5_anomaly/event_explainability.csv
 | in_out_imbalance | inflow/outflow 不平衡程度 |
 | duration_trend_slope | 事件期间流量趋势 |
 
+![事件级检测分支分数组成](week5_figures/fig7_1_method_contribution.png)
+
+<p class="figure-caption">图 7-1　左图为原始分支置信度最高的方法，右图为不同规则分类事件的平均 0–1 分支置信度（未乘融合权重）。119/131 个事件由 statistical score 主导，说明重构与预测分支目前主要提供互补证据。</p>
+
 该表可用于回答 mentor 可能提出的问题：为什么这个事件被判为异常、由哪个方法主导、发生在哪些网格、流量和统计偏离有多大。
 
 ### 7.2 人工抽样核验表
@@ -379,13 +407,34 @@ outputs/week5_anomaly/audit/event_audit_sample_50.csv
 | borderline | 15 | fusion score 接近决策阈值的边界事件 |
 | false_positive_by_weak_label | 15 | fusion 检出但 high Level-A 弱标签未标出的候选事件 |
 
+![待人工核验事件的抽样结构](week5_figures/fig7_2_audit_sample.png)
+
+<p class="figure-caption">图 7-2　50 条待人工核验事件的 fusion 分数和弱标签重合率。weak-label false-positive candidates 的弱标签重合率按定义为 0，不等于人工确认的假阳性。</p>
+
 注意：`false_positive_by_weak_label` 并不是人工确认的假阳性，只是 weak-label false-positive candidates。后续人工核验后，可以把结果填回 `manual_is_real_anomaly`、`manual_event_class`、`manual_notes` 三列，用于估计弱标签噪声和修正报告结论。
 
 ---
 
-## 八、可复现性与 checkpoint 校验
+## 八、评估边界与局限性
 
-### 8.1 关键配置与命令
+当前实验完成了弱监督条件下的相对比较，但在解释指标时必须保留以下边界：
+
+1. **没有人工异常真值**：TaxiBJ 不提供异常事件标签，因此报告中的 Precision、Recall 和 F1 衡量的是检测结果与统计弱标签的一致性，不能直接等价为真实世界异常检测准确率。
+2. **两级标签并非独立任务**：Level-B 是 Level-A 的更严格子集，用于观察高可信同步异常；两套结果不能当作两个相互独立的数据集进行比较。
+3. **统计方法与弱标签存在同源性**：弱标签和 statistical detector 都依赖 slot-normalized z-score 等统计规则，因此 statistical recall = 1.0 部分来自定义上的结构性优势。融合权重选择也可能因此偏向统计分支。
+4. **方向拆分依赖观测值**：high/low 使用真实 inflow 相对历史基线的 z-score sign 划分，只用于评估解释，不代表模型在检测时独立预测了异常方向。
+5. **事件匹配以时间为主**：事件构建阶段已经加入空间 IoU 和质心距离约束，但当前 event-level 指标主要按时间重叠匹配，尚未要求预测事件与弱标签事件在空间上同时匹配。
+6. **事件分类尚无类别真值**：mass_gathering、traffic_jam 和 sudden_incident 由规则特征推断。14/6/111 是模型输出分布，而不是分类准确率；尤其 traffic_jam 样本只有 6 个，不能据此证明该类别已经稳定识别。
+7. **人工核验尚未完成**：当前只生成了 50 条分层抽样队列，`manual_is_real_anomaly`、`manual_event_class` 和 `manual_notes` 尚未填写。因此本报告没有人工一致率，也不能把 weak-label false-positive candidates 称为真实假阳性。
+8. **融合仍由统计分支主导**：131 个最终事件中有 119 个的 dominant method 为 statistical，重构与预测误差主要起补充和过滤作用。这说明当前方案是统计规则主导的融合基线，而不是三个分支贡献均衡的集成模型。
+
+在上述限制下，本报告最可靠的结论是：融合方法相较单一检测器能显著压缩候选事件规模，并在固定弱标签口径下改善综合 F1；真实异常有效性与事件分类质量仍需人工核验或外部事件数据验证。
+
+---
+
+## 九、可复现性与 checkpoint 校验
+
+### 9.1 关键配置与命令
 
 主配置：
 
@@ -441,7 +490,7 @@ configs/week5_anomaly.yaml
   --output-dir outputs/week5_anomaly/audit
 ```
 
-### 8.2 Reconstruction checkpoint 校验
+### 9.2 Reconstruction checkpoint 校验
 
 当前 VAE 和 Transformer AE checkpoint 保存并校验以下元数据：
 
@@ -465,7 +514,7 @@ weak_normal_vector_count / weak_normal_window_count
 
 限制：这不是完整 provenance。如果预处理代码变化但数据文件内容和训练输入 hash 不变，checkpoint 不一定自动失效。后续可以进一步加入 git commit hash 或 preprocessing code hash。
 
-### 8.3 Reviewer 复审
+### 9.3 Reviewer 复审
 
 本轮实现后已调用 `training_reviewer` 做只读复审，结论为：
 
@@ -486,7 +535,7 @@ LOW:     3
 
 ---
 
-## 九、主要输出文件
+## 十、主要输出文件
 
 | 文件 | 用途 |
 |------|------|
@@ -502,7 +551,7 @@ LOW:     3
 
 ---
 
-## 十、结论与下一步
+## 十一、结论与下一步
 
 Week 5 已完成项目 PDF 中要求的三类异常检测方法和融合框架：
 

@@ -4,38 +4,45 @@
 <meta charset="utf-8">
 <title>Week 5 异常检测模型实现与融合评估报告</title>
 <style>
-@page { size: A4; margin: 18mm 14mm 18mm 14mm; }
-body {
-  font-family: "Noto Sans CJK SC", "Noto Sans CJK", "DejaVu Sans", Arial, sans-serif;
-  color: #1f2933;
-  line-height: 1.58;
-  font-size: 12px;
+@page {
+  size: A4;
+  margin: 18mm 16mm 18mm 16mm;
+  @bottom-center {
+    content: "Week 5 异常检测模型实现与融合评估报告 · " counter(page) " / " counter(pages);
+    font-size: 8.5pt;
+    color: #666;
+  }
 }
-h1, h2, h3 { color: #0f3557; line-height: 1.25; page-break-after: avoid; }
-h1 { font-size: 26px; border-bottom: 2px solid #0f3557; padding-bottom: 10px; }
-h2 { font-size: 19px; margin-top: 26px; border-bottom: 1px solid #d8dee9; padding-bottom: 5px; }
-h3 { font-size: 15px; margin-top: 18px; }
-table { border-collapse: collapse; width: 100%; margin: 12px 0 16px; font-size: 10.5px; }
-th, td { border: 1px solid #d8dee9; padding: 5px 6px; vertical-align: top; }
-th { background: #eef4f8; color: #0f3557; font-weight: 700; }
+html { font-family: "Noto Sans CJK SC", "Microsoft YaHei", "DejaVu Sans", sans-serif; color: #202124; }
+body { font-size: 10.5pt; line-height: 1.58; }
+h1 { font-size: 23pt; margin: 0 0 14pt; padding-bottom: 8pt; border-bottom: 2px solid #1f4e79; color: #17365d; }
+h2 { font-size: 17pt; margin-top: 22pt; padding-bottom: 4pt; border-bottom: 1px solid #d0d7de; color: #1f4e79; page-break-after: avoid; }
+h3 { font-size: 13pt; margin-top: 16pt; color: #333; page-break-after: avoid; }
+p { margin: 7pt 0; }
+ul, ol { margin-top: 5pt; margin-bottom: 8pt; padding-left: 22pt; }
+li { margin: 2.5pt 0; }
+code { font-family: "DejaVu Sans Mono", "Noto Sans Mono CJK SC", monospace; background: #f6f8fa; padding: 1pt 3pt; border-radius: 3px; font-size: 9.2pt; }
+pre { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 5px; padding: 8pt; overflow-wrap: break-word; white-space: pre-wrap; font-size: 9pt; }
+pre code { background: transparent; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 9pt 0 13pt; font-size: 9.2pt; page-break-inside: avoid; }
+th, td { border: 1px solid #c8d1da; padding: 5pt 6pt; vertical-align: top; }
+th { background: #eaf2f8; color: #17365d; font-weight: 700; }
 tr:nth-child(even) td { background: #fbfcfd; }
-code { font-family: "DejaVu Sans Mono", monospace; font-size: 10.5px; color: #7a2e0e; }
-pre { background: #f5f7fa; border: 1px solid #d8dee9; padding: 10px; border-radius: 6px; overflow-wrap: break-word; white-space: pre-wrap; }
-pre code { color: #1f2933; }
-blockquote { border-left: 4px solid #9fb3c8; padding-left: 10px; color: #52616b; }
-hr { border: none; border-top: 1px solid #d8dee9; margin: 20px 0; }
-ul, ol { padding-left: 22px; }
-strong { color: #102a43; }
+blockquote { margin: 8pt 0; padding: 5pt 10pt; border-left: 3px solid #9ab6d3; background: #f7fbff; color: #333; }
+hr { border: 0; border-top: 1px solid #d0d7de; margin: 16pt 0; }
+strong { color: #111; }
+img { display: block; width: 100%; height: auto; margin: 10pt auto 4pt; page-break-inside: avoid; }
+.figure-caption { margin: 2pt 8pt 13pt; color: #59636e; font-size: 8.6pt; text-align: center; page-break-before: avoid; }
 </style>
 </head>
 <body>
-<h1 id="week-5">Week 5 异常检测模型实现与融合评估报告</h1>
-<p><strong>项目名称</strong>：基于多源时空数据融合的城市级人流异常检测与预警系统<br />
-<strong>报告日期</strong>：2026-08-04<br />
+<h1>Week 5 异常检测模型实现与融合评估报告</h1>
+<p><strong>项目名称</strong>：基于多源时空数据融合的城市级人流异常检测与预警系统<br>
+<strong>报告日期</strong>：2026-08-04<br>
 <strong>报告阶段</strong>：第五周 — 异常检测方法实现、多模型融合、事件分类与人工核验样本生成</p>
-<hr />
-<h2 id="_1">一、本周目标与结论概览</h2>
-<h3 id="11">1.1 阶段目标</h3>
+<hr>
+<h2>一、本周目标与结论概览</h2>
+<h3>1.1 阶段目标</h3>
 <p>Week 5 的核心目标是在 Week 4 已选出的最佳预测模型基础上，实现城市网格人流异常检测模块。根据项目要求，本周需要覆盖三类异常检测方法，并最终形成加权投票融合框架：</p>
 <ol>
 <li><strong>基于统计规则的异常检测</strong>：实现 3σ 原则和 IQR 方法，基于历史人流数据计算每个网格在每个时间槽的正常波动范围；</li>
@@ -44,7 +51,7 @@ strong { color: #102a43; }
 <li><strong>多模型融合与事件分类</strong>：设计加权投票策略，并将异常事件分类为大型集会、交通拥堵、突发事件。</li>
 </ol>
 <p>由于 TaxiBJ 数据集没有人工真值标签，本报告使用统计规则生成的弱标签作为评估锚点，并额外输出人工抽样核验表，用于后续 sanity check。</p>
-<h3 id="12">1.2 最终结论</h3>
+<h3>1.2 最终结论</h3>
 <p>当前推荐 Week 5 主结果使用如下融合配置：</p>
 <pre><code class="language-text">statistical weight      = 0.70
 reconstruction weight   = 0.20
@@ -129,9 +136,9 @@ minimum event cells     = 6
 </tbody>
 </table>
 <p>本周最重要的工程结果是：异常检测模块已经从“单纯 timestep F1 评估”推进到“方向拆分 + 事件级评估 + 可解释事件表 + 人工核验样本”的可交付形态。</p>
-<hr />
-<h2 id="_2">二、数据、任务与弱标签设置</h2>
-<h3 id="21">2.1 数据与窗口设置</h3>
+<hr>
+<h2>二、数据、任务与弱标签设置</h2>
+<h3>2.1 数据与窗口设置</h3>
 <p>本周实验基于 TaxiBJ：</p>
 <table>
 <thead>
@@ -179,7 +186,7 @@ minimum event cells     = 6
 </tr>
 </tbody>
 </table>
-<h3 id="22">2.2 弱标签规则</h3>
+<h3>2.2 弱标签规则</h3>
 <p>TaxiBJ 没有人工异常标签，因此使用弱标签评估检测器。当前实现保留两级弱标签：</p>
 <p><strong>Level-A：高流量统计异常</strong></p>
 <pre><code class="language-text">inflow z-score &gt; 3.0 的网格数 &gt;= 12
@@ -218,9 +225,9 @@ outflow z-score &gt; 3.0 的网格数 &gt;= 25
 </tbody>
 </table>
 <p>说明：主报告口径仍以 high-flow 异常为核心；low 和 bidirectional 是为解释检测器双向异常能力而新增的评估视角。</p>
-<hr />
-<h2 id="_3">三、三类异常检测方法实现</h2>
-<h3 id="31-3-iqr">3.1 统计规则检测：3σ + IQR</h3>
+<hr>
+<h2>三、三类异常检测方法实现</h2>
+<h3>3.1 统计规则检测：3σ + IQR</h3>
 <p>统计检测在训练集上为每个网格、每个日内时间槽拟合历史正常范围：</p>
 <pre><code class="language-text">slot = local_time_of_day / 30min
 mean, std, q1, q3, IQR are fitted per (slot, grid)
@@ -231,7 +238,7 @@ mean, std, q1, q3, IQR are fitted per (slot, grid)
 <li><strong>IQR score</strong>：当前流量是否越过 <code>Q1 - 1.5 IQR</code> 或 <code>Q3 + 1.5 IQR</code>。</li>
 </ol>
 <p>统计分数归一化后用于融合。统计方法覆盖率高、召回强，但假阳性较多；这符合它作为弱标签和基础检测器的定位。</p>
-<h3 id="32-vae-transformer-autoencoder">3.2 重构误差检测：VAE + Transformer AutoEncoder</h3>
+<h3>3.2 重构误差检测：VAE + Transformer AutoEncoder</h3>
 <p>重构检测包含两个模型：</p>
 <table>
 <thead>
@@ -298,7 +305,7 @@ Transformer AE:
 </tbody>
 </table>
 <p>这样做的目的不是让 AutoEncoder 学会所有模式，而是让它更像“正常模式重构器”：异常窗口不应被轻易重构，从而提高重构误差的辨识度。</p>
-<h3 id="33-agformer">3.3 预测误差检测：AGFormer 残差</h3>
+<h3>3.3 预测误差检测：AGFormer 残差</h3>
 <p>预测误差检测复用 Week 4 最优模型：</p>
 <pre><code class="language-text">AGFormer + gated context + linear residual head + 4-seed mean ensemble
 </code></pre>
@@ -312,9 +319,9 @@ agformer_gate_context_linear_seed123
 <pre><code class="language-text">prediction_residual = |observed_inflow - predicted_inflow|
 </code></pre>
 <p>预测误差方法的覆盖率较低，但它能捕捉“统计范围内但模型预测失败”的异常，是融合框架中的补充信号。</p>
-<hr />
-<h2 id="_4">四、多模型融合策略</h2>
-<h3 id="41">4.1 置信度归一化</h3>
+<hr>
+<h2>四、多模型融合策略</h2>
+<h3>4.1 置信度归一化</h3>
 <p>三类方法原始分数量纲不同，因此统一映射到 0–1 置信度：</p>
 <pre><code class="language-text">confidence = clip(score / (2 * threshold), 0, 1)
 </code></pre>
@@ -325,7 +332,7 @@ agformer_gate_context_linear_seed123
   + w_prediction     * prediction_confidence
 </code></pre>
 <p>当 <code>fusion_score &gt;= decision_threshold</code> 且异常网格数不少于 6 时，判定该 timestep 存在异常。</p>
-<h3 id="42">4.2 融合参数选择</h3>
+<h3>4.2 融合参数选择</h3>
 <p>融合参数在 validation weak labels 上选择，然后固定到 test 上评估。调参结果如下：</p>
 <table>
 <thead>
@@ -333,8 +340,8 @@ agformer_gate_context_linear_seed123
 <th>方案</th>
 <th>权重 stat/recon/pred</th>
 <th style="text-align: right;">阈值</th>
-<th style="text-align: right;">Level-A F1</th>
-<th style="text-align: right;">Level-B F1</th>
+<th style="text-align: right;">Test Level-A F1</th>
+<th style="text-align: right;">Test Level-B F1</th>
 <th style="text-align: right;">事件数</th>
 <th>说明</th>
 </tr>
@@ -360,6 +367,9 @@ agformer_gate_context_linear_seed123
 </tr>
 </tbody>
 </table>
+<p><img alt="融合参数选择对比" src="week5_figures/fig4_1_fusion_selection.png"></p>
+<p class="figure-caption">图 4-1　两套候选融合方案在 validation Level-A、test Level-A/Level-B 和事件数量上的对比。参数只在 validation 弱标签上选择；test 指标用于固定参数后的评估，不参与调参。</p>
+
 <p>最终选择 high-precision 方案。原因是 Week5 的目标不是最大化弱标签 F1，而是输出可解释、可核验、事件数量可控的异常检测结果。该方案牺牲少量 Level-A F1，换来：</p>
 <ol>
 <li>更高 Level-B F1；</li>
@@ -367,9 +377,9 @@ agformer_gate_context_linear_seed123
 <li>traffic_jam 分类不再为 0；</li>
 <li>输出更适合作为 Week5 交付基线。</li>
 </ol>
-<hr />
-<h2 id="_5">五、检测结果与评估</h2>
-<h3 id="51-timestep">5.1 各方法 timestep 评估</h3>
+<hr>
+<h2>五、检测结果与评估</h2>
+<h3>5.1 各方法 timestep 评估</h3>
 <table>
 <thead>
 <tr>
@@ -421,8 +431,11 @@ agformer_gate_context_linear_seed123
 </tr>
 </tbody>
 </table>
+<p><img alt="三类异常检测方法与融合结果对比" src="week5_figures/fig5_1_method_comparison.png"></p>
+<p class="figure-caption">图 5-1　统计、重构、预测误差与融合方法的 timestep 指标及检测覆盖率。F1 数值标在对应柱上；右图虚线为 Level-A/Level-B 弱标签正例率。</p>
+
 <p>融合后的结果明显优于任一单方法。统计方法本身召回为 1.0，但 positive rate 高达 41.77%，无法直接作为最终检测结果；融合策略将 positive rate 压到 8.80%，同时保留较高 Level-B 召回。</p>
-<h3 id="52-high-low-bidirectional">5.2 high / low / bidirectional 方向拆分</h3>
+<h3>5.2 high / low / bidirectional 方向拆分</h3>
 <p>早期只看 high-flow 弱标签时，部分低流量异常会被当作 false positive。为解释这一问题，本周新增方向拆分评估。</p>
 <p>融合方法在三种方向下的 timestep 结果：</p>
 <table>
@@ -480,6 +493,9 @@ agformer_gate_context_linear_seed123
 </tr>
 </tbody>
 </table>
+<p><img alt="Fusion 方向性 timestep 指标热力图" src="week5_figures/fig5_2_direction_heatmap.png"></p>
+<p class="figure-caption">图 5-2　最终 fusion 在 high、low 和 bidirectional 三种方向下的 Precision、Recall 与 F1。Level-A 和 Level-B 分区展示，便于识别高召回与高精度口径的差异。</p>
+
 <p>结论：</p>
 <ul>
 <li>原始 Level-A timestep F1 为 0.4912，但 high-flow 拆分后 F1 提升到 0.6652；</li>
@@ -487,7 +503,7 @@ agformer_gate_context_linear_seed123
 <li>bidirectional 评估更符合实际检测器行为，因为统计、重构和预测残差都可能响应双向异常。</li>
 </ul>
 <p>需要注意：方向拆分使用的是观测 inflow 的 slot-normalized z-score sign，不代表模型直接预测了 high/low 方向。</p>
-<h3 id="53">5.3 事件级评估</h3>
+<h3>5.3 事件级评估</h3>
 <p>timestep F1 要求每个 30 分钟窗口逐点对齐，但异常检测更关心“事件是否被命中”。因此本周新增 event-level evaluation：先将连续 anomalous timesteps 合并为事件，再按时间重叠进行匹配。</p>
 <p>融合方法事件级结果：</p>
 <table>
@@ -552,15 +568,18 @@ agformer_gate_context_linear_seed123
 </tr>
 </tbody>
 </table>
+<p><img alt="Fusion timestep 与事件级评估对照" src="week5_figures/fig5_3_timestep_event.png"></p>
+<p class="figure-caption">图 5-3　同一 fusion 输出在 timestep 与 event-level 口径下的 F1，以及事件首次命中的平均延迟。延迟只针对成功匹配的弱标签参考事件计算。</p>
+
 <p>事件级结果说明：</p>
 <ol>
 <li>high Level-A event F1 为 0.5825，略低于 high timestep F1，但更贴近真实异常检测任务；</li>
 <li>high Level-B event recall 达到 0.9259，说明高可信事件大多能被 fusion 捕捉；</li>
 <li>low-flow event 的 delay 较大，说明低流量异常常以持续低迷形式出现，模型往往在事件中后段才触发。</li>
 </ol>
-<hr />
-<h2 id="_6">六、事件合并与异常分类</h2>
-<h3 id="61">6.1 空间连续事件合并</h3>
+<hr>
+<h2>六、事件合并与异常分类</h2>
+<h3>6.1 空间连续事件合并</h3>
 <p>早期事件合并只看时间连续性：只要相邻 timestep 都异常，就合成同一个事件。这会把不同地点但时间相邻的异常误合并。</p>
 <p>当前实现加入空间连续性约束：</p>
 <pre><code class="language-text">两个相邻 timestep 合并为同一事件，当且仅当：
@@ -573,7 +592,7 @@ AND
 )
 </code></pre>
 <p>这样可以避免一个区域的异常结束后，另一个区域的异常刚好开始时被错误合成单个长事件。</p>
-<h3 id="62">6.2 异常分类规则</h3>
+<h3>6.2 异常分类规则</h3>
 <p>当前事件分类支持三类：</p>
 <table>
 <thead>
@@ -635,10 +654,16 @@ cluster_count
 </tr>
 </tbody>
 </table>
+<p><img alt="融合异常事件类型与预警等级构成" src="week5_figures/fig6_1_event_profile.png"></p>
+<p class="figure-caption">图 6-1　131 个融合异常事件的规则分类与 severity 分布。事件类型和等级都是算法输出，并非人工真值标签。</p>
+
+<p><img alt="不同事件类型的持续时间分布" src="week5_figures/fig6_2_event_duration.png"></p>
+<p class="figure-caption">图 6-2　各规则分类事件的持续时间箱线图与真实样本点。mass_gathering 的持续时间整体更长；traffic_jam 仅有 6 个样本，应谨慎解读其分布。</p>
+
 <p>相比早期版本，<code>traffic_jam</code> 不再全部为 0，说明分类规则已经能识别一部分带状、道路相关、持续性异常。不过当前 road_density 仍来自静态 node feature 的代理变量，后续如果需要更强交通拥堵识别，应接入真实路网线段或更精细的道路类型特征。</p>
-<hr />
-<h2 id="_7">七、可解释性输出与人工核验</h2>
-<h3 id="71">7.1 事件解释表</h3>
+<hr>
+<h2>七、可解释性输出与人工核验</h2>
+<h3>7.1 事件解释表</h3>
 <p>本周新增：</p>
 <pre><code class="language-text">outputs/week5_anomaly/event_explainability.csv
 </code></pre>
@@ -697,8 +722,11 @@ cluster_count
 </tr>
 </tbody>
 </table>
+<p><img alt="事件级检测分支分数组成" src="week5_figures/fig7_1_method_contribution.png"></p>
+<p class="figure-caption">图 7-1　左图为原始分支置信度最高的方法，右图为不同规则分类事件的平均 0–1 分支置信度（未乘融合权重）。119/131 个事件由 statistical score 主导，说明重构与预测分支目前主要提供互补证据。</p>
+
 <p>该表可用于回答 mentor 可能提出的问题：为什么这个事件被判为异常、由哪个方法主导、发生在哪些网格、流量和统计偏离有多大。</p>
-<h3 id="72">7.2 人工抽样核验表</h3>
+<h3>7.2 人工抽样核验表</h3>
 <p>由于没有真标签，本周新增人工核验样本：</p>
 <pre><code class="language-text">outputs/week5_anomaly/audit/event_audit_sample_50.csv
 </code></pre>
@@ -729,10 +757,27 @@ cluster_count
 </tr>
 </tbody>
 </table>
+<p><img alt="待人工核验事件的抽样结构" src="week5_figures/fig7_2_audit_sample.png"></p>
+<p class="figure-caption">图 7-2　50 条待人工核验事件的 fusion 分数和弱标签重合率。weak-label false-positive candidates 的弱标签重合率按定义为 0，不等于人工确认的假阳性。</p>
+
 <p>注意：<code>false_positive_by_weak_label</code> 并不是人工确认的假阳性，只是 weak-label false-positive candidates。后续人工核验后，可以把结果填回 <code>manual_is_real_anomaly</code>、<code>manual_event_class</code>、<code>manual_notes</code> 三列，用于估计弱标签噪声和修正报告结论。</p>
-<hr />
-<h2 id="checkpoint">八、可复现性与 checkpoint 校验</h2>
-<h3 id="81">8.1 关键配置与命令</h3>
+<hr>
+<h2>八、评估边界与局限性</h2>
+<p>当前实验完成了弱监督条件下的相对比较，但在解释指标时必须保留以下边界：</p>
+<ol>
+<li><strong>没有人工异常真值</strong>：TaxiBJ 不提供异常事件标签，因此报告中的 Precision、Recall 和 F1 衡量的是检测结果与统计弱标签的一致性，不能直接等价为真实世界异常检测准确率。</li>
+<li><strong>两级标签并非独立任务</strong>：Level-B 是 Level-A 的更严格子集，用于观察高可信同步异常；两套结果不能当作两个相互独立的数据集进行比较。</li>
+<li><strong>统计方法与弱标签存在同源性</strong>：弱标签和 statistical detector 都依赖 slot-normalized z-score 等统计规则，因此 statistical recall = 1.0 部分来自定义上的结构性优势。融合权重选择也可能因此偏向统计分支。</li>
+<li><strong>方向拆分依赖观测值</strong>：high/low 使用真实 inflow 相对历史基线的 z-score sign 划分，只用于评估解释，不代表模型在检测时独立预测了异常方向。</li>
+<li><strong>事件匹配以时间为主</strong>：事件构建阶段已经加入空间 IoU 和质心距离约束，但当前 event-level 指标主要按时间重叠匹配，尚未要求预测事件与弱标签事件在空间上同时匹配。</li>
+<li><strong>事件分类尚无类别真值</strong>：mass_gathering、traffic_jam 和 sudden_incident 由规则特征推断。14/6/111 是模型输出分布，而不是分类准确率；尤其 traffic_jam 样本只有 6 个，不能据此证明该类别已经稳定识别。</li>
+<li><strong>人工核验尚未完成</strong>：当前只生成了 50 条分层抽样队列，<code>manual_is_real_anomaly</code>、<code>manual_event_class</code> 和 <code>manual_notes</code> 尚未填写。因此本报告没有人工一致率，也不能把 weak-label false-positive candidates 称为真实假阳性。</li>
+<li><strong>融合仍由统计分支主导</strong>：131 个最终事件中有 119 个的 dominant method 为 statistical，重构与预测误差主要起补充和过滤作用。这说明当前方案是统计规则主导的融合基线，而不是三个分支贡献均衡的集成模型。</li>
+</ol>
+<p>在上述限制下，本报告最可靠的结论是：融合方法相较单一检测器能显著压缩候选事件规模，并在固定弱标签口径下改善综合 F1；真实异常有效性与事件分类质量仍需人工核验或外部事件数据验证。</p>
+<hr>
+<h2>九、可复现性与 checkpoint 校验</h2>
+<h3>9.1 关键配置与命令</h3>
 <p>主配置：</p>
 <pre><code class="language-text">configs/week5_anomaly.yaml
 </code></pre>
@@ -769,7 +814,7 @@ cluster_count
   --summary outputs/week5_anomaly/summary.json \
   --output-dir outputs/week5_anomaly/audit
 </code></pre>
-<h3 id="82-reconstruction-checkpoint">8.2 Reconstruction checkpoint 校验</h3>
+<h3>9.2 Reconstruction checkpoint 校验</h3>
 <p>当前 VAE 和 Transformer AE checkpoint 保存并校验以下元数据：</p>
 <pre><code class="language-text">city
 data_path
@@ -787,7 +832,7 @@ weak_normal_vector_count / weak_normal_window_count
 </code></pre>
 <p>如果以上字段与当前配置不一致，脚本会拒绝直接加载旧 checkpoint 并重新训练。这可以防止改了 label 规则、split、scaler 或模型超参后误用旧模型。</p>
 <p>限制：这不是完整 provenance。如果预处理代码变化但数据文件内容和训练输入 hash 不变，checkpoint 不一定自动失效。后续可以进一步加入 git commit hash 或 preprocessing code hash。</p>
-<h3 id="83-reviewer">8.3 Reviewer 复审</h3>
+<h3>9.3 Reviewer 复审</h3>
 <p>本轮实现后已调用 <code>training_reviewer</code> 做只读复审，结论为：</p>
 <pre><code class="language-text">BLOCKER: 无
 HIGH:    无
@@ -802,8 +847,8 @@ LOW:     3
 <li>high/low 方向拆分使用观测 z-score sign，不代表模型直接预测方向；</li>
 <li>当前 <code>duration_hours = steps * 0.5</code> 适配 TaxiBJ，跨数据集时需要配置化。</li>
 </ol>
-<hr />
-<h2 id="_8">九、主要输出文件</h2>
+<hr>
+<h2>十、主要输出文件</h2>
 <table>
 <thead>
 <tr>
@@ -850,8 +895,8 @@ LOW:     3
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="_9">十、结论与下一步</h2>
+<hr>
+<h2>十一、结论与下一步</h2>
 <p>Week 5 已完成项目 PDF 中要求的三类异常检测方法和融合框架：</p>
 <ol>
 <li>统计规则：3σ + IQR；</li>
