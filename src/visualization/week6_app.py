@@ -23,6 +23,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.visualization.api_client import ApiError, Week6ApiClient
 from src.visualization.kepler_maps import event_map_html, flow_map_html
+from src.visualization.satellite_maps import (
+    event_satellite_map_html,
+    flow_satellite_map_html,
+    plotly_satellite_layer,
+    satellite_caption,
+)
 
 
 st.set_page_config(page_title="城市人流监测与异常预警", page_icon="🌆", layout="wide")
@@ -97,15 +103,47 @@ def render_new_alerts(client: Week6ApiClient, *, sound_enabled: bool) -> None:
         alert_dialog(latest)
 
 
-def render_flow_map(payload: dict, *, height: int) -> None:
-    st.iframe(flow_map_html(payload["cells"], height=height), height=height + 10)
+def render_flow_map(
+    payload: dict,
+    *,
+    height: int,
+    basemap_mode: str,
+    basemap_opacity: float,
+) -> None:
+    if basemap_mode == "satellite":
+        html = flow_satellite_map_html(
+            payload["cells"], height=height, basemap_opacity=basemap_opacity
+        )
+    else:
+        html = flow_map_html(payload["cells"], height=height)
+    st.iframe(html, height=height + 10)
 
 
-def render_event_map(events: list[dict], *, height: int) -> None:
-    st.iframe(event_map_html(events, height=height), height=height + 10)
+def render_event_map(
+    events: list[dict],
+    *,
+    height: int,
+    basemap_mode: str,
+    basemap_opacity: float,
+) -> None:
+    if basemap_mode == "satellite":
+        html = event_satellite_map_html(
+            events, height=height, basemap_opacity=basemap_opacity
+        )
+    else:
+        html = event_map_html(events, height=height)
+    st.iframe(html, height=height + 10)
 
 
-def live_tab(client: Week6ApiClient, *, refresh_seconds: int, map_height: int, sound_enabled: bool) -> None:
+def live_tab(
+    client: Week6ApiClient,
+    *,
+    refresh_seconds: int,
+    map_height: int,
+    sound_enabled: bool,
+    basemap_mode: str,
+    basemap_opacity: float,
+) -> None:
     st.subheader("城市人流实时态势")
     source_value = st.radio("显示内容", ["observed", "predicted"], format_func=lambda x: "观测人流" if x == "observed" else "h1 预测", horizontal=True)
 
@@ -124,13 +162,26 @@ def live_tab(client: Week6ApiClient, *, refresh_seconds: int, map_height: int, s
         columns[3].metric("异常网格", int(summary["anomaly_cells"]))
         columns[4].metric("最高异常分数", f"{summary['max_anomaly_score']:.3f}")
         render_new_alerts(client, sound_enabled=sound_enabled)
-        render_flow_map(payload, height=map_height)
+        render_flow_map(
+            payload,
+            height=map_height,
+            basemap_mode=basemap_mode,
+            basemap_opacity=basemap_opacity,
+        )
+        if basemap_mode == "satellite":
+            st.caption(satellite_caption())
         st.caption(f"每 {refresh_seconds} 秒读取一次实时微批产物；地图时间为 TaxiBJ 离线实时模拟时间。")
 
     live_fragment()
 
 
-def forecast_tab(client: Week6ApiClient, *, map_height: int) -> None:
+def forecast_tab(
+    client: Week6ApiClient,
+    *,
+    map_height: int,
+    basemap_mode: str,
+    basemap_opacity: float,
+) -> None:
     st.subheader("未来 24 小时人流预测动画")
     try:
         payload = client.forecast(horizon_steps=48)
@@ -162,14 +213,18 @@ def forecast_tab(client: Week6ApiClient, *, map_height: int) -> None:
         radius=18,
         center={"lat": float(base["center_lat"].mean()), "lon": float(base["center_lon"].mean())},
         zoom=8.8,
-        map_style="carto-darkmatter",
+        map_style="white-bg" if basemap_mode == "satellite" else "carto-darkmatter",
         color_continuous_scale=["#0B1F3A", "#1D70A2", "#2CA6A4", "#FDE74C", "#FA7921", "#D7263D"],
         range_color=(0, float(animation["predicted_flow"].quantile(0.995))),
         height=map_height,
         title="未来 24 小时网格人流预测（点击播放按钮启动动画）",
     )
+    if basemap_mode == "satellite":
+        figure.update_layout(map_layers=[plotly_satellite_layer(basemap_opacity)])
     figure.update_layout(margin={"l": 0, "r": 0, "t": 45, "b": 0})
     st.plotly_chart(figure, width="stretch")
+    if basemap_mode == "satellite":
+        st.caption(satellite_caption())
 
     trend = pd.DataFrame({"timestamp": [item["timestamp"] for item in frames], "mean_flow": [item["mean"] for item in frames]})
     trend["timestamp"] = pd.to_datetime(trend["timestamp"])
@@ -177,7 +232,13 @@ def forecast_tab(client: Week6ApiClient, *, map_height: int) -> None:
     st.caption("48 帧来自同一个 forecast origin 的 AGFormer gated+linear 四随机种子 ensemble，不是 48 个独立 h1 预测的拼接。")
 
 
-def anomaly_tab(client: Week6ApiClient, *, map_height: int) -> None:
+def anomaly_tab(
+    client: Week6ApiClient,
+    *,
+    map_height: int,
+    basemap_mode: str,
+    basemap_opacity: float,
+) -> None:
     st.subheader("异常事件查询与详情")
     filters = st.columns(5)
     source = filters[0].selectbox("数据源", ["historical", "realtime"], format_func=lambda x: "历史事件" if x == "historical" else "实时事件")
@@ -207,7 +268,14 @@ def anomaly_tab(client: Week6ApiClient, *, map_height: int) -> None:
     table = pd.DataFrame(events)
     display_columns = ["event_id", "start_time", "end_time", "event_type_zh", "alert_level_zh", "max_score", "duration_hours", "union_cells"]
     st.dataframe(table[[column for column in display_columns if column in table]], width="stretch", hide_index=True)
-    render_event_map(events, height=map_height)
+    render_event_map(
+        events,
+        height=map_height,
+        basemap_mode=basemap_mode,
+        basemap_opacity=basemap_opacity,
+    )
+    if basemap_mode == "satellite":
+        st.caption(satellite_caption())
 
     labels = {
         int(item["event_id"]): f"#{int(item['event_id'])} · {item.get('alert_level_zh', '')} · {item.get('event_type_zh', item.get('event_type'))} · {str(item.get('start_time', '')).replace('T', ' ')}"
@@ -276,6 +344,18 @@ def main() -> None:
         refresh_seconds = st.slider("实时刷新间隔（秒）", 5, 120, 30, 5)
         sound_enabled = st.toggle("紧急预警声音", value=True)
         map_height = st.slider("地图高度", 420, 760, 570, 10)
+        basemap_mode = st.selectbox(
+            "地图背景",
+            ["satellite", "kepler"],
+            format_func=lambda value: (
+                "Landsat‑8 北京卫星影像" if value == "satellite" else "Kepler.gl 暗色地图"
+            ),
+        )
+        basemap_opacity = (
+            st.slider("卫星底图透明度", 0.25, 1.0, 0.72, 0.05)
+            if basemap_mode == "satellite"
+            else 0.72
+        )
         client = Week6ApiClient(api_url)
         if st.button("检查 API", width="stretch"):
             try:
@@ -294,11 +374,28 @@ def main() -> None:
 
     client = Week6ApiClient(api_url)
     if page == "实时热力图":
-        live_tab(client, refresh_seconds=refresh_seconds, map_height=map_height, sound_enabled=sound_enabled)
+        live_tab(
+            client,
+            refresh_seconds=refresh_seconds,
+            map_height=map_height,
+            sound_enabled=sound_enabled,
+            basemap_mode=basemap_mode,
+            basemap_opacity=basemap_opacity,
+        )
     elif page == "24h 预测动画":
-        forecast_tab(client, map_height=map_height)
+        forecast_tab(
+            client,
+            map_height=map_height,
+            basemap_mode=basemap_mode,
+            basemap_opacity=basemap_opacity,
+        )
     elif page == "异常事件":
-        anomaly_tab(client, map_height=map_height)
+        anomaly_tab(
+            client,
+            map_height=map_height,
+            basemap_mode=basemap_mode,
+            basemap_opacity=basemap_opacity,
+        )
     else:
         statistics_tab(client)
 
