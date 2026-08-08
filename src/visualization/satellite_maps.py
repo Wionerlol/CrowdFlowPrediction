@@ -72,7 +72,9 @@ def _bitmap_layer(opacity: float) -> pdk.Layer:
     return pdk.Layer(
         "BitmapLayer",
         data=None,
-        image=satellite_image_uri(),
+        # Explicit Image prevents pydeck from prefixing a data URI with "@@="
+        # and making deck.gl parse it as a JavaScript accessor expression.
+        image=pdk.types.Image(str(SATELLITE_IMAGE)),
         bounds=_bounds(),
         opacity=float(opacity),
         pickable=False,

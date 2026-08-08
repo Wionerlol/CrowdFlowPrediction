@@ -42,6 +42,7 @@ class Week6SatelliteMapTest(unittest.TestCase):
         self.assertIn("BitmapLayer", html)
         self.assertIn("HeatmapLayer", html)
         self.assertIn("data:image/webp;base64,", html)
+        self.assertNotIn("@@=data:image", html)
         self.assertIn("height: 430px", html)
 
     def test_event_map_embeds_bitmap_and_event_points(self) -> None:
