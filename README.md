@@ -180,7 +180,9 @@ CrowdFlowPrediction/
   - Streamlit + Kepler.gl 实时热力图、异常事件地图与详情
   - 同一预测起点的未来 24 小时（48 帧）预测动画
   - 一般 / 重要 / 紧急三级预警，支持弹窗、横幅和紧急声音提示
-  - 启动方式与接口说明见 [`docs/week6_web_app.md`](docs/week6_web_app.md)
+  - Web 使用说明见 [`docs/week6_web_app.md`](docs/week6_web_app.md)
+  - REST API 见 [`docs/week6_api_reference.md`](docs/week6_api_reference.md)
+  - 部署与运维见 [`docs/week6_deployment_guide.md`](docs/week6_deployment_guide.md)
 - [ ] **Week 7**：模型优化与可解释性分析
 - [ ] **Week 8**：项目总结与演示
 
