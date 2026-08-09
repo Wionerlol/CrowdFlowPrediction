@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -41,6 +42,7 @@ from src.anomaly.prediction_error import (
 )
 from src.anomaly.reconstruction import score_transformer_targets, score_vae
 from src.anomaly.statistical import (
+    SlotStats,
     build_events,
     fit_slot_stats,
     generate_weak_labels,
@@ -110,6 +112,122 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     temp_path.replace(path)
+
+
+_SLOT_STAT_ARRAYS = ("mean", "std", "q1", "q3", "iqr", "lower", "upper")
+
+
+def _sha256(path: Path, *, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _statistical_fingerprint(
+    week5_cfg: dict[str, Any], *, train_len: int
+) -> dict[str, Any]:
+    data_path = Path(str(week5_cfg["data_path"]))
+    stat_cfg = week5_cfg["statistical"]
+    return {
+        "schema_version": 1,
+        "data_path": str(data_path),
+        "data_sha256": _sha256(data_path),
+        "train_len": int(train_len),
+        "steps_per_day": int(week5_cfg["steps_per_day"]),
+        "tz_offset": int(week5_cfg["tz_offset"]),
+        "statistical": {
+            key: stat_cfg.get(key)
+            for key in (
+                "sigma_z", "iqr_factor", "min_std", "weak_label_min_cells",
+                "level_b_outflow_z", "level_b_min_outflow_cells",
+            )
+        },
+    }
+
+
+def _slot_stats_from_cache(source: Any, prefix: str) -> SlotStats:
+    return SlotStats(
+        steps_per_day=int(source[f"{prefix}_steps_per_day"].item()),
+        **{name: source[f"{prefix}_{name}"].astype(np.float32) for name in _SLOT_STAT_ARRAYS},
+        min_std=float(source[f"{prefix}_min_std"].item()),
+        iqr_factor=float(source[f"{prefix}_iqr_factor"].item()),
+    )
+
+
+def load_or_fit_statistical_context(
+    week5_cfg: dict[str, Any],
+    data: Array,
+    timestamps: Array,
+    train_len: int,
+    *,
+    cache_path: str | Path | None,
+) -> tuple[SlotStats, SlotStats, Array, bool]:
+    """Load immutable training-only statistics, invalidating on data/rule changes."""
+
+    path = Path(cache_path) if cache_path else None
+    fingerprint_json = None
+    if path is not None:
+        fingerprint = _statistical_fingerprint(week5_cfg, train_len=train_len)
+        fingerprint_json = json.dumps(fingerprint, ensure_ascii=False, sort_keys=True)
+    if path is not None and path.exists():
+        try:
+            with np.load(path, allow_pickle=False) as source:
+                cached_fingerprint = str(source["fingerprint_json"].item())
+                if cached_fingerprint == fingerprint_json:
+                    return (
+                        _slot_stats_from_cache(source, "inflow"),
+                        _slot_stats_from_cache(source, "outflow"),
+                        source["train_weak"].astype(bool),
+                        True,
+                    )
+        except (KeyError, OSError, ValueError):
+            # Old/partial cache: rebuild below and atomically replace it.
+            pass
+
+    stat_cfg = week5_cfg["statistical"]
+    steps = int(week5_cfg["steps_per_day"])
+    tz = int(week5_cfg["tz_offset"])
+    full_in = flatten_channel(data, 0)
+    full_out = flatten_channel(data, 1)
+    train_slots = slot_indices_from_timestamps(
+        timestamps[:train_len], steps_per_day=steps, tz_offset=tz
+    )
+    stats = fit_slot_stats(
+        data[:train_len, 0], timestamps[:train_len],
+        steps_per_day=steps, tz_offset=tz,
+        min_std=float(stat_cfg.get("min_std", 1.0)),
+        iqr_factor=float(stat_cfg.get("iqr_factor", 1.5)),
+    )
+    outflow_stats = fit_slot_stats(
+        data[:train_len, 1], timestamps[:train_len],
+        steps_per_day=steps, tz_offset=tz,
+        min_std=float(stat_cfg.get("min_std", 1.0)),
+        iqr_factor=float(stat_cfg.get("iqr_factor", 1.5)),
+    )
+    train_weak = generate_weak_labels(
+        full_in[:train_len], train_slots, stats,
+        outflow=full_out[:train_len], outflow_stats=outflow_stats, level="B",
+        z_thresh=float(stat_cfg.get("sigma_z", 3.0)),
+        min_high_cells=int(stat_cfg.get("weak_label_min_cells", 12)),
+        outflow_z_thresh=float(stat_cfg.get("level_b_outflow_z", 2.5)),
+        min_outflow_cells=int(stat_cfg.get("level_b_min_outflow_cells", 6)),
+    )
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        arrays: dict[str, Any] = {
+            "fingerprint_json": np.asarray(fingerprint_json),
+            "train_weak": train_weak.astype(bool),
+        }
+        for prefix, value in (("inflow", stats), ("outflow", outflow_stats)):
+            arrays[f"{prefix}_steps_per_day"] = np.asarray(value.steps_per_day)
+            arrays[f"{prefix}_min_std"] = np.asarray(value.min_std)
+            arrays[f"{prefix}_iqr_factor"] = np.asarray(value.iqr_factor)
+            for name in _SLOT_STAT_ARRAYS:
+                arrays[f"{prefix}_{name}"] = getattr(value, name)
+        atomic_savez(path, **arrays)
+    return stats, outflow_stats, train_weak, False
 
 
 def load_pipeline_config(path: str | Path) -> dict[str, Any]:
@@ -404,6 +522,10 @@ class Week6Pipeline:
         week5_cfg["reconstruction"]["inference_only"] = True
         set_seed(int(week5_cfg.get("seed", 42)))
         device = torch.device(self.device)
+        pipeline_started = time.perf_counter()
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+            torch.cuda.reset_peak_memory_stats(device)
 
         window_count = int(window_count or realtime_cfg.get("window_count", 24))
         window_start = int(window_start if window_start is not None else realtime_cfg.get("window_start", -window_count))
@@ -464,16 +586,51 @@ class Week6Pipeline:
         started_at = utc_now()
         start = time.time()
         pred_cfg = week5_cfg["prediction"]
-        pred = predict_ensemble_horizon(
-            list(pred_cfg["ensemble_tags"]),
-            split="test",
-            horizon=int(week5_cfg.get("horizon", 1)),
-            batch_size=int(pred_cfg.get("batch_size", 8)),
-            num_workers=int(pred_cfg.get("num_workers", 2)),
-            device=device,
-            max_windows=window_count,
-            window_start=window_start,
+        batch_size = int(realtime_cfg.get("prediction_batch_size", pred_cfg.get("batch_size", 8)))
+        prediction_num_workers = int(
+            realtime_cfg.get("prediction_num_workers", pred_cfg.get("num_workers", 2))
         )
+        prediction_precision = str(realtime_cfg.get("prediction_precision", "fp32"))
+        materialize_attention = bool(
+            realtime_cfg.get("materialize_attention_weights", False)
+        )
+        reuse_forecast = bool(realtime_cfg.get("reuse_forecast_inference", False))
+        sequence = None
+        if reuse_forecast:
+            sequence = predict_ensemble_sequence(
+                list(pred_cfg["ensemble_tags"]),
+                split="test",
+                batch_size=batch_size,
+                num_workers=prediction_num_workers,
+                device=device,
+                max_windows=window_count,
+                window_start=window_start,
+                precision=prediction_precision,
+                materialize_attention_weights=materialize_attention,
+            )
+            horizon_index = int(week5_cfg.get("horizon", 1)) - 1
+            pred_values = sequence["pred"][..., horizon_index]
+            true_values = sequence["true"][..., horizon_index]
+            pred = {
+                "target_indices": sequence["target_indices"][:, horizon_index],
+                "timestamps": sequence["timestamps"][:, horizon_index],
+                "pred": pred_values,
+                "true": true_values,
+                "residual": np.abs(pred_values - true_values).astype(np.float32),
+            }
+        else:
+            pred = predict_ensemble_horizon(
+                list(pred_cfg["ensemble_tags"]),
+                split="test",
+                horizon=int(week5_cfg.get("horizon", 1)),
+                batch_size=batch_size,
+                num_workers=prediction_num_workers,
+                device=device,
+                max_windows=window_count,
+                window_start=window_start,
+                precision=prediction_precision,
+                materialize_attention_weights=materialize_attention,
+            )
         test_idx = pred["target_indices"]
         self._record_stage(
             "model_inference",
@@ -481,27 +638,53 @@ class Week6Pipeline:
             start,
             status="ok",
             artifacts={"windows": int(len(test_idx))},
-            message="predicted selected realtime windows",
+            message=(
+                "predicted full sequences once for anomaly and forecast reuse"
+                if reuse_forecast else "predicted selected realtime windows"
+            ),
         )
 
         started_at = utc_now()
         start = time.time()
-        forecast = predict_ensemble_sequence(
-            list(pred_cfg["ensemble_tags"]),
-            split="test",
-            batch_size=int(pred_cfg.get("batch_size", 8)),
-            num_workers=int(pred_cfg.get("num_workers", 2)),
-            device=device,
-            max_windows=1,
-            window_start=int(realtime_cfg.get("forecast_window_start", -1)),
-        )
+        forecast_window = int(realtime_cfg.get("forecast_window_start", -1))
+        forecast_reused = False
+        if sequence is not None:
+            window_range = sequence["window_range"]
+            dataset_length = int(window_range["dataset_length"])
+            resolved_forecast_window = (
+                max(dataset_length + forecast_window, 0)
+                if forecast_window < 0 else forecast_window
+            )
+            if int(window_range["start"]) <= resolved_forecast_window < int(window_range["stop"]):
+                row = resolved_forecast_window - int(window_range["start"])
+                forecast = {
+                    "timestamps": sequence["timestamps"][row:row + 1],
+                    "target_indices": sequence["target_indices"][row:row + 1],
+                    "pred": sequence["pred"][row:row + 1],
+                }
+                forecast_reused = True
+        if not forecast_reused:
+            forecast = predict_ensemble_sequence(
+                list(pred_cfg["ensemble_tags"]),
+                split="test",
+                batch_size=batch_size,
+                num_workers=prediction_num_workers,
+                device=device,
+                max_windows=1,
+                window_start=forecast_window,
+                precision=prediction_precision,
+                materialize_attention_weights=materialize_attention,
+            )
         self._record_stage(
             "forecast_24h_inference",
             started_at,
             start,
             status="ok",
             artifacts={"horizon_steps": int(forecast["pred"].shape[-1])},
-            message="predicted one common-origin 24-hour sequence",
+            message=(
+                "reused common-origin sequence from realtime micro-batch"
+                if forecast_reused else "predicted one common-origin 24-hour sequence"
+            ),
         )
 
         started_at = utc_now()
@@ -509,36 +692,14 @@ class Week6Pipeline:
         stat_cfg = week5_cfg["statistical"]
         steps = int(week5_cfg["steps_per_day"])
         tz = int(week5_cfg["tz_offset"])
-        train_slots = slot_indices_from_timestamps(timestamps[:train_len], steps_per_day=steps, tz_offset=tz)
         full_in = flatten_channel(data, 0)
         full_out = flatten_channel(data, 1)
-        stats = fit_slot_stats(
-            data[:train_len, 0],
-            timestamps[:train_len],
-            steps_per_day=steps,
-            tz_offset=tz,
-            min_std=float(stat_cfg.get("min_std", 1.0)),
-            iqr_factor=float(stat_cfg.get("iqr_factor", 1.5)),
-        )
-        outflow_stats = fit_slot_stats(
-            data[:train_len, 1],
-            timestamps[:train_len],
-            steps_per_day=steps,
-            tz_offset=tz,
-            min_std=float(stat_cfg.get("min_std", 1.0)),
-            iqr_factor=float(stat_cfg.get("iqr_factor", 1.5)),
-        )
-        train_weak = generate_weak_labels(
-            full_in[:train_len],
-            train_slots,
-            stats,
-            outflow=full_out[:train_len],
-            outflow_stats=outflow_stats,
-            level="B",
-            z_thresh=float(stat_cfg.get("sigma_z", 3.0)),
-            min_high_cells=int(stat_cfg.get("weak_label_min_cells", 12)),
-            outflow_z_thresh=float(stat_cfg.get("level_b_outflow_z", 2.5)),
-            min_outflow_cells=int(stat_cfg.get("level_b_min_outflow_cells", 6)),
+        stats, outflow_stats, train_weak, statistical_cache_hit = load_or_fit_statistical_context(
+            week5_cfg,
+            data,
+            timestamps,
+            train_len,
+            cache_path=realtime_cfg.get("statistical_cache"),
         )
         test_slots = slot_indices_from_timestamps(timestamps[test_idx], steps_per_day=steps, tz_offset=tz)
         stat_result = score_statistical(
@@ -553,8 +714,15 @@ class Week6Pipeline:
             started_at,
             start,
             status="ok",
-            artifacts={"train_weak_positive_count": int(train_weak.sum())},
-            message="fitted train slot stats and scored realtime windows",
+            artifacts={
+                "train_weak_positive_count": int(train_weak.sum()),
+                "cache_hit": statistical_cache_hit,
+                "cache": realtime_cfg.get("statistical_cache"),
+            },
+            message=(
+                "loaded cached train slot stats and scored realtime windows"
+                if statistical_cache_hit else "fitted train slot stats and scored realtime windows"
+            ),
         )
 
         started_at = utc_now()
@@ -727,6 +895,9 @@ class Week6Pipeline:
             "popup_alerts": 0,
             "sound_alerts": 0,
         }
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        pipeline_duration = time.perf_counter() - pipeline_started
         summary = {
             "mode": "realtime",
             "config": self.config_path,
@@ -735,6 +906,24 @@ class Week6Pipeline:
             "window_start": window_start,
             "requested_window_count": window_count,
             "actual_window_count": int(len(test_idx)),
+            "performance": {
+                "prediction_batch_size": batch_size,
+                "prediction_num_workers": prediction_num_workers,
+                "prediction_precision": prediction_precision,
+                "materialize_attention_weights": materialize_attention,
+                "reuse_forecast_inference": reuse_forecast,
+                "forecast_reused": forecast_reused,
+                "statistical_cache_hit": statistical_cache_hit,
+                "pipeline_duration_seconds": float(pipeline_duration),
+                "cuda_peak_allocated_mib": (
+                    float(torch.cuda.max_memory_allocated(device) / 1024**2)
+                    if device.type == "cuda" else None
+                ),
+                "cuda_peak_reserved_mib": (
+                    float(torch.cuda.max_memory_reserved(device) / 1024**2)
+                    if device.type == "cuda" else None
+                ),
+            },
             "time_range": {
                 "start": str(pred["timestamps"][0]) if len(test_idx) else None,
                 "end": str(pred["timestamps"][-1]) if len(test_idx) else None,

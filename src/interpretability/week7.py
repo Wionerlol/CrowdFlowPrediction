@@ -233,10 +233,15 @@ def extract_attention(
             return hook
 
         for layer_index, block in enumerate(model.blocks):
+            block.capture_attention_weights = True
             handles.append(block.attn.register_forward_hook(make_hook(layer_index)))
-        model(x, graphs)
-        for handle in handles:
-            handle.remove()
+        try:
+            model(x, graphs)
+        finally:
+            for handle in handles:
+                handle.remove()
+            for block in model.blocks:
+                block.capture_attention_weights = False
         adaptive_sum += model.adaptive_adj.detach().float().cpu().numpy()
         del model
 

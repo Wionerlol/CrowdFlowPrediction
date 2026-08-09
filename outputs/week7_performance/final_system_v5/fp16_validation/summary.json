@@ -1,0 +1,40 @@
+{
+  "scope": "stratified_contiguous_test_segments",
+  "segments": [
+    [
+      0,
+      64
+    ],
+    [
+      1250,
+      64
+    ],
+    [
+      2500,
+      64
+    ],
+    [
+      3958,
+      64
+    ]
+  ],
+  "sample_windows": 256,
+  "node_predictions": 262144,
+  "prediction_max_abs_diff": 0.97088623046875,
+  "prediction_mean_abs_diff": 0.034193333238363266,
+  "mae_semantics": "masked where abs(true_flow) > 0, matching project metrics",
+  "fp32_masked_mae": 10.305124282836914,
+  "fp16_masked_mae": 10.305076599121094,
+  "masked_mae_delta": -4.76837158203125e-05,
+  "fp32_unmasked_mae_diagnostic": 9.803590774536133,
+  "fp16_unmasked_mae_diagnostic": 9.803507804870605,
+  "fusion_mask_mismatch_rate": 0.0,
+  "passed": true,
+  "quality_gate_candidate_precision": "fp16",
+  "quality_gate_passed": true,
+  "week5_config": "/home/louis/projects/DidiRemote/configs/week5_anomaly.yaml",
+  "week5_scores": "/home/louis/projects/DidiRemote/outputs/week5_anomaly/scores.npz",
+  "week5_scores_sha256": "88a92a1c460af374cc455f4f8ba2f59d24de4924e9844bd641ecc20bd17d1b29",
+  "sample_predictions": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/fp16_validation/sample_predictions.npz",
+  "sample_predictions_sha256": "662f413d770f66b83be82c0024fcef3d92d6d76e0b56de3d9e9e038fc08e6d48"
+}

@@ -63,6 +63,10 @@ class AGFormerBlock(nn.Module):
         )
         self.norm3  = nn.LayerNorm(d_model)
         self.drop   = nn.Dropout(dropout)
+        # Attention matrices are only materialised for the Week7 XAI export.
+        # The prediction/training hot path discards them, so asking PyTorch not
+        # to build the O(B*N*T*T) tensor saves both latency and peak memory.
+        self.capture_attention_weights = False
 
     def forward(self, x: torch.Tensor,
                 A_hat: torch.Tensor,
@@ -76,7 +80,9 @@ class AGFormerBlock(nn.Module):
 
         # ── 1. 时序自注意力（节点独立）────────────────────────────────
         h = x.view(B * N, T, d)
-        attn_out, _ = self.attn(h, h, h)          # (BN, T, d)
+        attn_out, _ = self.attn(
+            h, h, h, need_weights=self.capture_attention_weights
+        )                                           # (BN, T, d)
         h = self.norm1(h + self.drop(attn_out))
         h = h.view(B, N, T, d)
 

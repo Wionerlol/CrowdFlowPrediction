@@ -617,13 +617,18 @@ def _available_port(host: str, preferred: int) -> int:
 def _tree_rss_bytes(pid: int) -> int:
     try:
         import psutil
-
-        process = psutil.Process(pid)
-        return int(
-            process.memory_info().rss
-            + sum(child.memory_info().rss for child in process.children(recursive=True))
-        )
-    except (ImportError, OSError, ProcessLookupError):
+    except ImportError:
+        psutil = None
+    if psutil is not None:
+        try:
+            process = psutil.Process(pid)
+            return int(
+                process.memory_info().rss
+                + sum(child.memory_info().rss for child in process.children(recursive=True))
+            )
+        except (psutil.Error, OSError, ProcessLookupError):
+            return 0
+    else:
         status = Path(f"/proc/{pid}/status")
         if not status.exists():
             return 0

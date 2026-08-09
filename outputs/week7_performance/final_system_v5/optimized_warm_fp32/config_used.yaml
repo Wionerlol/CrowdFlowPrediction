@@ -1,0 +1,58 @@
+output_dir: /home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/orchestration
+device: cuda
+preprocessing:
+  run: false
+  commands:
+  - - .venv/bin/python
+    - scripts/preprocess_all.py
+  required_artifacts:
+  - data/processed/taxibj_clean.npz
+  - data/processed/taxinyc_clean.npz
+  - data/processed/weather_bj_30min.csv
+  - data/processed/weather_nyc_30min.csv
+feature_engineering:
+  run: false
+  commands:
+  - - .venv/bin/python
+    - scripts/build_temporal_features.py
+  - - .venv/bin/python
+    - scripts/build_graphs.py
+  required_artifacts:
+  - data/processed/node_features_bj.npy
+  - data/processed/graph_spatial_bj.pt
+  - data/processed/graph_flow_bj.pt
+  - data/processed/graph_poi_bj.pt
+  - data/processed/graph_transit_bj.pt
+  - data/processed/grid_coords_bj.npy
+  - data/processed/grid_meta_bj.csv
+batch:
+  week5_config: configs/week5_anomaly.yaml
+  alerts_config: configs/week6_alerts.yaml
+  run_anomaly_detection: true
+  required_week5_artifacts:
+  - outputs/week5_anomaly/summary.json
+  - outputs/week5_anomaly/scores.npz
+  - outputs/week5_anomaly/events.csv
+  - outputs/week5_anomaly/event_explainability.csv
+  week5_summary: outputs/week5_anomaly/summary.json
+  week5_events: outputs/week5_anomaly/events.csv
+realtime:
+  week5_config: configs/week5_anomaly.yaml
+  alerts_config: configs/week6_alerts.yaml
+  calibration_scores: outputs/week5_anomaly/scores.npz
+  output_dir: /home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/realtime
+  window_start: -24
+  window_count: 24
+  prediction_batch_size: 8
+  prediction_num_workers: 0
+  prediction_precision: fp32
+  materialize_attention_weights: false
+  reuse_forecast_inference: true
+  statistical_cache: /home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/cache/statistical_bj_v1.npz
+  forecast_window_start: -1
+  required_artifacts:
+  - data/processed/taxibj_clean.npz
+  - data/processed/node_features_bj.npy
+  - outputs/week5_anomaly/checkpoints/vae.pt
+  - outputs/week5_anomaly/checkpoints/transformer_ae.pt
+  - outputs/week5_anomaly/scores.npz

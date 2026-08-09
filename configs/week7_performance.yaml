@@ -1,0 +1,56 @@
+tag: week7_system_performance_v5
+output_dir: outputs/week7_performance/final_system_v5
+base_pipeline_config: configs/week6_pipeline.yaml
+batch_sweep_source_csv: outputs/week7_performance/batch_sweep_v1.csv
+
+# Saved by the fixed Week7 final-system benchmark before these optimizations.
+api_baseline_csv: outputs/week7_evaluation/final_system_v1/api_benchmark.csv
+api_benchmark:
+  web_config: configs/week6_web.yaml
+  host: 127.0.0.1
+  port: 18180
+  startup_timeout_seconds: 30
+  warmups: 2
+  repeats: 100
+  endpoints:
+    - {name: status, method: GET, path: /api/v1/status}
+    - name: realtime_heatmap_1024_cells
+      method: GET
+      path: /api/v1/heatmap
+      params: {source: realtime, value_type: observed}
+    - name: forecast_48_steps_1024_cells
+      method: GET
+      path: /api/v1/predictions
+      params: {horizon_steps: 48}
+    - name: anomaly_detect_top20
+      method: POST
+      path: /api/v1/anomaly/detect
+      json: {city: bj, source: realtime, top_k: 20}
+    - name: historical_anomalies_200
+      method: GET
+      path: /api/v1/anomalies
+      params: {source: historical, limit: 200}
+    - name: historical_statistics
+      method: GET
+      path: /api/v1/statistics
+      params: {source: historical}
+
+quantization:
+  checkpoint_tag: agformer_gate_context_linear_seed42
+  repeats: 3
+
+fp16_validation:
+  week5_config: configs/week5_anomaly.yaml
+  scores: outputs/week5_anomaly/scores.npz
+  batch_size: 8
+  # Four periods spread across all 4,022 valid test windows (256 total).
+  segments: [[0, 64], [1250, 64], [2500, 64], [3958, 64]]
+  max_mae_delta: 0.02
+
+gates:
+  fp32_max_abs_prediction_diff: 0.001
+  fp16_min_speedup: 1.05
+  fp16_max_mean_abs_prediction_diff: 0.10
+  fp16_max_mask_mismatch_rate: 0.001
+  int8_min_speedup: 1.05
+  int8_max_mean_abs_prediction_diff: 0.10

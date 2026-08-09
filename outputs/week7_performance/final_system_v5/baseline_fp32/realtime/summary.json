@@ -1,0 +1,204 @@
+{
+  "mode": "realtime",
+  "config": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/config_used.yaml",
+  "device": "cuda",
+  "city": "bj",
+  "window_start": -24,
+  "requested_window_count": 24,
+  "actual_window_count": 24,
+  "performance": {
+    "prediction_batch_size": 8,
+    "prediction_num_workers": 2,
+    "prediction_precision": "fp32",
+    "materialize_attention_weights": true,
+    "reuse_forecast_inference": false,
+    "forecast_reused": false,
+    "statistical_cache_hit": false,
+    "pipeline_duration_seconds": 6.416112937033176,
+    "cuda_peak_allocated_mib": 826.2470703125,
+    "cuda_peak_reserved_mib": 938.0
+  },
+  "time_range": {
+    "start": "2016-04-08T05:00:00",
+    "end": "2016-04-08T16:30:00"
+  },
+  "fusion": {
+    "weights": {
+      "statistical": 0.7,
+      "reconstruction": 0.2,
+      "prediction": 0.1
+    },
+    "decision_threshold": 0.56,
+    "min_event_cells": 6
+  },
+  "calibration": {
+    "scores": "outputs/week5_anomaly/scores.npz",
+    "threshold_arrays": [
+      "pred_threshold",
+      "vae_threshold",
+      "transformer_threshold"
+    ],
+    "source": "Week5 validation-calibrated thresholds"
+  },
+  "checkpoints": {
+    "vae": "outputs/week5_anomaly/checkpoints/vae.pt",
+    "transformer": "outputs/week5_anomaly/checkpoints/transformer_ae.pt",
+    "vae_model_config_hash": "7b205a6af98dc5dd",
+    "transformer_model_config_hash": "9b357b8d0cf7542f",
+    "vae_label_rule_hash": "a1f3426a56cff000",
+    "transformer_label_rule_hash": "a1f3426a56cff000"
+  },
+  "events": {
+    "count": 0,
+    "by_type": {},
+    "path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/events.csv"
+  },
+  "alerts": {
+    "total_alerts": 0,
+    "by_level": {},
+    "by_level_zh": {},
+    "by_level_and_event_type": {},
+    "popup_alerts": 0,
+    "sound_alerts": 0,
+    "path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/alerts.csv"
+  },
+  "artifacts": {
+    "scores": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/scores.npz",
+    "forecast_24h": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/forecast_24h.npz",
+    "time_summary": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/time_summary.csv",
+    "events": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/events.csv",
+    "alerts": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/alerts.csv"
+  },
+  "stages": [
+    {
+      "name": "realtime_preprocessing_artifacts",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:29+00:00",
+      "ended_at": "2026-08-09T13:20:29+00:00",
+      "duration_seconds": 9.489059448242188e-05,
+      "artifacts": {
+        "data/processed/taxibj_clean.npz": {
+          "exists": true,
+          "size_bytes": 69285630
+        },
+        "data/processed/node_features_bj.npy": {
+          "exists": true,
+          "size_bytes": 168064
+        },
+        "outputs/week5_anomaly/checkpoints/vae.pt": {
+          "exists": true,
+          "size_bytes": 2738893
+        },
+        "outputs/week5_anomaly/checkpoints/transformer_ae.pt": {
+          "exists": true,
+          "size_bytes": 813193
+        },
+        "outputs/week5_anomaly/scores.npz": {
+          "exists": true,
+          "size_bytes": 153792830
+        }
+      },
+      "message": "required artifacts validated"
+    },
+    {
+      "name": "load_calibration",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:29+00:00",
+      "ended_at": "2026-08-09T13:20:29+00:00",
+      "duration_seconds": 0.00024199485778808594,
+      "artifacts": {
+        "scores": "outputs/week5_anomaly/scores.npz"
+      },
+      "message": "loaded Week5 thresholds"
+    },
+    {
+      "name": "load_data",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:29+00:00",
+      "ended_at": "2026-08-09T13:20:30+00:00",
+      "duration_seconds": 0.5289170742034912,
+      "artifacts": {
+        "shape": [
+          22484,
+          2,
+          32,
+          32
+        ],
+        "train_len": 15738,
+        "val_len": 2249
+      },
+      "message": "loaded processed city data"
+    },
+    {
+      "name": "model_inference",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:30+00:00",
+      "ended_at": "2026-08-09T13:20:32+00:00",
+      "duration_seconds": 2.0058488845825195,
+      "artifacts": {
+        "windows": 24
+      },
+      "message": "predicted selected realtime windows"
+    },
+    {
+      "name": "forecast_24h_inference",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:32+00:00",
+      "ended_at": "2026-08-09T13:20:33+00:00",
+      "duration_seconds": 1.7410669326782227,
+      "artifacts": {
+        "horizon_steps": 48
+      },
+      "message": "predicted one common-origin 24-hour sequence"
+    },
+    {
+      "name": "statistical_detection",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:33+00:00",
+      "ended_at": "2026-08-09T13:20:35+00:00",
+      "duration_seconds": 1.7230937480926514,
+      "artifacts": {
+        "train_weak_positive_count": 199,
+        "cache_hit": false,
+        "cache": null
+      },
+      "message": "fitted train slot stats and scored realtime windows"
+    },
+    {
+      "name": "reconstruction_detection",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:35+00:00",
+      "ended_at": "2026-08-09T13:20:35+00:00",
+      "duration_seconds": 0.24460506439208984,
+      "artifacts": {
+        "vae_checkpoint": "outputs/week5_anomaly/checkpoints/vae.pt",
+        "transformer_checkpoint": "outputs/week5_anomaly/checkpoints/transformer_ae.pt"
+      },
+      "message": "loaded reconstruction checkpoints and scored windows"
+    },
+    {
+      "name": "anomaly_event_building",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:35+00:00",
+      "ended_at": "2026-08-09T13:20:35+00:00",
+      "duration_seconds": 0.003809213638305664,
+      "artifacts": {
+        "events": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/events.csv",
+        "event_count": 0
+      },
+      "message": "fused scores and built realtime events"
+    },
+    {
+      "name": "alert_generation",
+      "status": "ok",
+      "started_at": "2026-08-09T13:20:35+00:00",
+      "ended_at": "2026-08-09T13:20:35+00:00",
+      "duration_seconds": 0.0021681785583496094,
+      "artifacts": {
+        "alerts": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/alerts.csv",
+        "alert_count": 0
+      },
+      "message": "mapped Week5 events to Week6 alert levels"
+    }
+  ]
+}

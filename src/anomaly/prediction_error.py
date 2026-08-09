@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -153,7 +154,23 @@ def load_model_from_checkpoint(
     return model, cfg, float(ckpt["mean"]), float(ckpt["std"]), path
 
 
-@torch.no_grad()
+def _configure_attention_capture(model: torch.nn.Module, enabled: bool) -> None:
+    for block in getattr(model, "blocks", []):
+        if hasattr(block, "capture_attention_weights"):
+            block.capture_attention_weights = bool(enabled)
+
+
+def _autocast_context(device: torch.device, precision: str):
+    if precision == "fp32":
+        return nullcontext()
+    if precision != "fp16":
+        raise ValueError("precision must be fp32 or fp16")
+    if device.type != "cuda":
+        raise ValueError("fp16 inference is only enabled on CUDA")
+    return torch.autocast(device_type="cuda", dtype=torch.float16)
+
+
+@torch.inference_mode()
 def predict_ensemble_horizon(
     tags: list[str],
     *,
@@ -164,6 +181,8 @@ def predict_ensemble_horizon(
     device: torch.device | str = "cpu",
     max_windows: int | None = None,
     window_start: int = 0,
+    precision: str = "fp32",
+    materialize_attention_weights: bool = False,
 ) -> dict[str, Any]:
     """Predict one horizon with a mean ensemble.
 
@@ -214,12 +233,14 @@ def predict_ensemble_horizon(
     members = []
     for tag in tags:
         model, cfg, ckpt_mean, ckpt_std, path = load_model_from_checkpoint(tag, device=device)
+        _configure_attention_capture(model, materialize_attention_weights)
         if abs(ckpt_mean - mean) > 1e-6 or abs(ckpt_std - std) > 1e-6:
             raise RuntimeError(f"Checkpoint {tag} uses different normalization stats")
         preds = []
         true = []
         for x, y in loader:
-            out = model(x.to(device), graphs)
+            with _autocast_context(device, precision):
+                out = model(x.to(device), graphs)
             preds.append(out[..., horizon - 1].cpu())
             true.append(y[..., horizon - 1])
         pred = torch.cat(preds, dim=0) * std + mean
@@ -240,6 +261,7 @@ def predict_ensemble_horizon(
     return {
         "split": split,
         "horizon": horizon,
+        "precision": precision,
         "target_indices": target_abs,
         "timestamps": target_ts,
         "pred": pred_ensemble,
@@ -250,7 +272,7 @@ def predict_ensemble_horizon(
     }
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def predict_ensemble_sequence(
     tags: list[str],
     *,
@@ -260,6 +282,8 @@ def predict_ensemble_sequence(
     device: torch.device | str = "cpu",
     max_windows: int | None = 1,
     window_start: int = -1,
+    precision: str = "fp32",
+    materialize_attention_weights: bool = False,
 ) -> dict[str, Any]:
     """Predict all horizons from one or more common forecast origins.
 
@@ -314,12 +338,14 @@ def predict_ensemble_sequence(
     members = []
     for tag in tags:
         model, cfg, ckpt_mean, ckpt_std, path = load_model_from_checkpoint(tag, device=device)
+        _configure_attention_capture(model, materialize_attention_weights)
         if abs(ckpt_mean - mean) > 1e-6 or abs(ckpt_std - std) > 1e-6:
             raise RuntimeError(f"Checkpoint {tag} uses different normalization stats")
         preds = []
         true = []
         for x, y in loader:
-            preds.append(model(x.to(device), graphs).cpu())
+            with _autocast_context(device, precision):
+                preds.append(model(x.to(device), graphs).cpu())
             true.append(y)
         pred = torch.cat(preds, dim=0) * std + mean
         true_cat = torch.cat(true, dim=0) * std + mean
@@ -346,6 +372,12 @@ def predict_ensemble_sequence(
 
     return {
         "split": split,
+        "precision": precision,
+        "window_range": {
+            "start": int(start),
+            "stop": int(stop),
+            "dataset_length": int(len(ds)),
+        },
         "target_indices": target_indices.astype(np.int64),
         "timestamps": target_timestamps,
         "pred": (pred_sum / len(tags)).numpy().astype(np.float32),

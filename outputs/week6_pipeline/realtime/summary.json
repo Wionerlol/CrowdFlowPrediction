@@ -3,11 +3,11 @@
   "config": "configs/week6_pipeline.yaml",
   "device": "cuda",
   "city": "bj",
-  "window_start": -4,
-  "requested_window_count": 4,
-  "actual_window_count": 4,
+  "window_start": -24,
+  "requested_window_count": 24,
+  "actual_window_count": 24,
   "time_range": {
-    "start": "2016-04-08T15:00:00",
+    "start": "2016-04-08T05:00:00",
     "end": "2016-04-08T16:30:00"
   },
   "fusion": {
@@ -61,9 +61,9 @@
     {
       "name": "realtime_preprocessing_artifacts",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:37+00:00",
-      "ended_at": "2026-08-08T17:58:37+00:00",
-      "duration_seconds": 7.724761962890625e-05,
+      "started_at": "2026-08-09T09:43:04+00:00",
+      "ended_at": "2026-08-09T09:43:04+00:00",
+      "duration_seconds": 0.00010991096496582031,
       "artifacts": {
         "data/processed/taxibj_clean.npz": {
           "exists": true,
@@ -91,9 +91,9 @@
     {
       "name": "load_calibration",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:37+00:00",
-      "ended_at": "2026-08-08T17:58:37+00:00",
-      "duration_seconds": 0.009497404098510742,
+      "started_at": "2026-08-09T09:43:04+00:00",
+      "ended_at": "2026-08-09T09:43:04+00:00",
+      "duration_seconds": 0.009900093078613281,
       "artifacts": {
         "scores": "outputs/week5_anomaly/scores.npz"
       },
@@ -102,9 +102,9 @@
     {
       "name": "load_data",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:37+00:00",
-      "ended_at": "2026-08-08T17:58:37+00:00",
-      "duration_seconds": 0.5509834289550781,
+      "started_at": "2026-08-09T09:43:04+00:00",
+      "ended_at": "2026-08-09T09:43:05+00:00",
+      "duration_seconds": 0.5597290992736816,
       "artifacts": {
         "shape": [
           22484,
@@ -120,20 +120,20 @@
     {
       "name": "model_inference",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:37+00:00",
-      "ended_at": "2026-08-08T17:58:39+00:00",
-      "duration_seconds": 1.588393211364746,
+      "started_at": "2026-08-09T09:43:05+00:00",
+      "ended_at": "2026-08-09T09:43:07+00:00",
+      "duration_seconds": 2.571899175643921,
       "artifacts": {
-        "windows": 4
+        "windows": 24
       },
       "message": "predicted selected realtime windows"
     },
     {
       "name": "forecast_24h_inference",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:39+00:00",
-      "ended_at": "2026-08-08T17:58:40+00:00",
-      "duration_seconds": 1.5209991931915283,
+      "started_at": "2026-08-09T09:43:07+00:00",
+      "ended_at": "2026-08-09T09:43:09+00:00",
+      "duration_seconds": 1.6089308261871338,
       "artifacts": {
         "horizon_steps": 48
       },
@@ -142,9 +142,9 @@
     {
       "name": "statistical_detection",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:40+00:00",
-      "ended_at": "2026-08-08T17:58:42+00:00",
-      "duration_seconds": 1.7866301536560059,
+      "started_at": "2026-08-09T09:43:09+00:00",
+      "ended_at": "2026-08-09T09:43:11+00:00",
+      "duration_seconds": 1.7782573699951172,
       "artifacts": {
         "train_weak_positive_count": 199
       },
@@ -153,9 +153,9 @@
     {
       "name": "reconstruction_detection",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:42+00:00",
-      "ended_at": "2026-08-08T17:58:43+00:00",
-      "duration_seconds": 0.31592893600463867,
+      "started_at": "2026-08-09T09:43:11+00:00",
+      "ended_at": "2026-08-09T09:43:11+00:00",
+      "duration_seconds": 0.25282812118530273,
       "artifacts": {
         "vae_checkpoint": "outputs/week5_anomaly/checkpoints/vae.pt",
         "transformer_checkpoint": "outputs/week5_anomaly/checkpoints/transformer_ae.pt"
@@ -165,9 +165,9 @@
     {
       "name": "anomaly_event_building",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:43+00:00",
-      "ended_at": "2026-08-08T17:58:43+00:00",
-      "duration_seconds": 0.003696918487548828,
+      "started_at": "2026-08-09T09:43:11+00:00",
+      "ended_at": "2026-08-09T09:43:11+00:00",
+      "duration_seconds": 0.0041921138763427734,
       "artifacts": {
         "events": "outputs/week6_pipeline/realtime/events.csv",
         "event_count": 0
@@ -177,9 +177,9 @@
     {
       "name": "alert_generation",
       "status": "ok",
-      "started_at": "2026-08-08T17:58:43+00:00",
-      "ended_at": "2026-08-08T17:58:43+00:00",
-      "duration_seconds": 0.002346038818359375,
+      "started_at": "2026-08-09T09:43:11+00:00",
+      "ended_at": "2026-08-09T09:43:11+00:00",
+      "duration_seconds": 0.0022759437561035156,
       "artifacts": {
         "alerts": "outputs/week6_pipeline/realtime/alerts.csv",
         "alert_count": 0

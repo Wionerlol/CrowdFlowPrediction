@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from threading import RLock
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -85,7 +85,7 @@ class ArtifactCache:
     """Small mtime-aware cache for JSON, CSV and selected NPZ arrays."""
 
     def __init__(self) -> None:
-        self._items: dict[tuple[Any, ...], tuple[int, Any]] = {}
+        self._items: dict[tuple[Any, ...], tuple[Any, Any]] = {}
         self._lock = RLock()
 
     @staticmethod
@@ -131,6 +131,24 @@ class ArtifactCache:
             self._items[cache_key] = (mtime, value)
             return value
 
+    def derived(
+        self,
+        name: str,
+        dependencies: Iterable[Path],
+        factory: Callable[[], Any],
+    ) -> Any:
+        """Cache validated/derived views and invalidate on any source mtime."""
+
+        paths = tuple(dependencies)
+        token = tuple(self._mtime(path) for path in paths)
+        key = ("derived", name, paths)
+        with self._lock:
+            if key in self._items and self._items[key][0] == token:
+                return self._items[key][1]
+            value = factory()
+            self._items[key] = (token, value)
+            return value
+
 
 class Week6ArtifactRepository:
     """Query facade shared by FastAPI and inexpensive service tests."""
@@ -152,12 +170,17 @@ class Week6ArtifactRepository:
         return self.paths[name]
 
     def _grid_meta(self) -> pd.DataFrame:
-        grid = self.cache.csv(self._path("grid_meta")).copy()
-        required = {"grid_id", "row", "col", "center_lon", "center_lat"}
-        missing = required - set(grid.columns)
-        if missing:
-            raise ArtifactNotReadyError(f"grid metadata missing columns: {sorted(missing)}")
-        return grid.sort_values("grid_id").reset_index(drop=True)
+        path = self._path("grid_meta")
+
+        def build() -> pd.DataFrame:
+            grid = self.cache.csv(path).copy()
+            required = {"grid_id", "row", "col", "center_lon", "center_lat"}
+            missing = required - set(grid.columns)
+            if missing:
+                raise ArtifactNotReadyError(f"grid metadata missing columns: {sorted(missing)}")
+            return grid.sort_values("grid_id").reset_index(drop=True)
+
+        return self.cache.derived("grid_meta_validated", [path], build)
 
     def _select_grid(self, region: Region | None) -> pd.DataFrame:
         grid = self._grid_meta()
@@ -299,7 +322,7 @@ class Week6ArtifactRepository:
                     "mean": float(np.mean(values)),
                     "max": float(np.max(values)),
                     "total": float(np.sum(values)),
-                    "values": [float(value) for value in values],
+                    "values": values.astype(float, copy=False).tolist(),
                 }
             )
         return {
@@ -317,32 +340,37 @@ class Week6ArtifactRepository:
         if source not in {"realtime", "historical"}:
             raise ValueError("source must be realtime or historical")
         key = "realtime_alerts" if source == "realtime" else "historical_alerts"
-        frame = self.cache.csv(self._path(key)).copy()
-        for column in ["start_time", "end_time"]:
-            if column in frame:
-                frame[column] = pd.to_datetime(frame[column], errors="coerce")
-        if len(frame) and {"main_centroid_row", "main_centroid_col"}.issubset(frame.columns):
-            grid = self._grid_meta().set_index(["row", "col"])
-            longitudes = []
-            latitudes = []
-            for _, row in frame.iterrows():
-                center_row = row.get("main_centroid_row")
-                center_col = row.get("main_centroid_col")
-                if pd.isna(center_row) or pd.isna(center_col):
-                    longitudes.append(np.nan)
-                    latitudes.append(np.nan)
-                    continue
-                key_pair = (int(round(float(center_row))), int(round(float(center_col))))
-                if key_pair not in grid.index:
-                    longitudes.append(np.nan)
-                    latitudes.append(np.nan)
-                    continue
-                cell = grid.loc[key_pair]
-                longitudes.append(float(cell["center_lon"]))
-                latitudes.append(float(cell["center_lat"]))
-            frame["center_lon"] = longitudes
-            frame["center_lat"] = latitudes
-        return frame
+        alerts_path = self._path(key)
+        grid_path = self._path("grid_meta")
+
+        def build() -> pd.DataFrame:
+            frame = self.cache.csv(alerts_path).copy()
+            for column in ["start_time", "end_time"]:
+                if column in frame:
+                    frame[column] = pd.to_datetime(frame[column], errors="coerce")
+            centroid_columns = {"main_centroid_row", "main_centroid_col"}
+            if len(frame) and centroid_columns.issubset(frame.columns):
+                # Recompute coordinates from the authoritative grid mapping;
+                # avoid merge suffixes if a future alert export already
+                # carries stale center_lon/center_lat columns.
+                frame = frame.drop(columns=["center_lon", "center_lat"], errors="ignore")
+                frame["_center_row_key"] = frame["main_centroid_row"].round().astype("Int64")
+                frame["_center_col_key"] = frame["main_centroid_col"].round().astype("Int64")
+                locations = self._grid_meta()[
+                    ["row", "col", "center_lon", "center_lat"]
+                ].rename(columns={"row": "_center_row_key", "col": "_center_col_key"})
+                frame = frame.merge(
+                    locations,
+                    on=["_center_row_key", "_center_col_key"],
+                    how="left",
+                    sort=False,
+                    validate="many_to_one",
+                ).drop(columns=["_center_row_key", "_center_col_key"])
+            return frame
+
+        return self.cache.derived(
+            f"events_enriched_{source}", [alerts_path, grid_path], build
+        )
 
     def query_events(
         self,

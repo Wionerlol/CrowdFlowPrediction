@@ -51,6 +51,18 @@ realtime:
   output_dir: outputs/week6_pipeline/realtime
   window_start: -24
   window_count: 24
+  # Week7 performance path: 24 windows are processed in measured-safe GPU
+  # micro-batches and shared by h1 anomaly detection plus the Web forecast.
+  prediction_batch_size: 8
+  prediction_num_workers: 0
+  # The 256-window FP16 accuracy gate passed, but the final same-run latency
+  # gate did not (0.995x); keep the production path on stable FP32.
+  prediction_precision: fp32
+  materialize_attention_weights: false
+  reuse_forecast_inference: true
+  # Training-only slot statistics are immutable until source data or label
+  # rules change; the cache embeds a SHA256-backed fingerprint.
+  statistical_cache: outputs/week6_pipeline/cache/statistical_bj_v1.npz
   # A single latest, common-origin 48-step forecast used by the Web animation.
   forecast_window_start: -1
   required_artifacts:

@@ -57,6 +57,12 @@ outputs/week5_anomaly/tuned_fusion/*.npz
 outputs/week5_anomaly/tuned_fusion/fusion_grid.csv
 outputs/week6_pipeline/realtime/scores.npz
 outputs/week6_pipeline/realtime/forecast_24h.npz
+# Superseded Week7 performance dry runs; final_system_v5 is the reviewed run.
+outputs/week7_performance/batch_sweep_v1.csv
+outputs/week7_performance/final_system_v1/
+outputs/week7_performance/final_system_v2/
+outputs/week7_performance/final_system_v3/
+outputs/week7_performance/final_system_v4/
 
 # ── Codex / agent 本地配置 ──────────────────────────────────
 .codex/
