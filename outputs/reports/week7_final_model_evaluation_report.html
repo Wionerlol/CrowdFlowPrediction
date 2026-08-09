@@ -1,0 +1,361 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Week7 最终模型性能评估报告</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 17mm; @bottom-center { content: counter(page); font-size: 8pt; color: #667085; } }
+@font-face { font-family: CJK; src: local("Noto Sans CJK SC"), local("Noto Sans CJK JP"), local("Microsoft YaHei"); }
+html { font-family: CJK, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.62; }
+body { max-width: 100%; margin: 0; }
+h1 { color: #173A5E; font-size: 24pt; line-height: 1.25; margin: 8mm 0 3mm; padding-bottom: 4mm; border-bottom: 2px solid #2563A6; }
+h2 { color: #1F5A8A; font-size: 16pt; margin: 8mm 0 3mm; border-bottom: 1px solid #D8E3ED; padding-bottom: 1.5mm; page-break-after: avoid; }
+h3 { color: #2D5E83; font-size: 12pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+p { margin: 2.2mm 0; text-align: justify; }
+ul, ol { margin: 2mm 0 3mm 6mm; padding-left: 5mm; }
+li { margin: 1mm 0; }
+blockquote { margin: 4mm 0; padding: 3mm 4mm; border-left: 4px solid #2E8B57; background: #F2F8F5; color: #244536; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.5pt; page-break-inside: avoid; }
+th { background: #EAF2F8; color: #173A5E; font-weight: 700; }
+th, td { border: 1px solid #CCD8E3; padding: 1.7mm 1.8mm; vertical-align: top; }
+tr:nth-child(even) td { background: #FAFCFD; }
+img { display: block; max-width: 100%; width: 100%; height: auto; margin: 4mm auto 1mm; page-break-inside: avoid; }
+.figure-caption { color: #5D6875; font-size: 8.4pt; text-align: center; margin: 0 5mm 5mm; page-break-before: avoid; }
+.meta { color: #5D6875; margin: 0 0 8mm; }
+.decision { border: 1px solid #9EC5AE; background: #F4FAF6; padding: 3mm 4mm; margin: 4mm 0; }
+code { background: #F1F4F7; padding: 0.2mm 1mm; border-radius: 2px; font-size: 8.5pt; }
+strong { color: #142F4B; }
+</style></head><body><h1>Week7 最终模型性能评估报告</h1>
+<div class="meta">TaxiBJ · AGFormer gated+linear 四随机种子集成 · 生成日期 2026-08-09</div>
+
+<blockquote>
+<p><strong>结论摘要：</strong> 最终模型在 4,022 个严格 gap-aware 测试窗口上取得 h1 MAE <strong>11.3019</strong>、24 小时平均 MAE <strong>15.9030</strong>。四 seed 均值集成相对最佳单模型的 24 小时平均 MAE 再降低 <strong>1.30%</strong>。异常融合在 Level-A 弱标签上 timestep F1 为 <strong>0.4912</strong>、事件 F1 为 <strong>0.4819</strong>；这些异常指标只表示弱规则一致性，不是真实业务准确率。</p>
+</blockquote>
+<h2>1. 评估目标与固定口径</h2>
+<ul>
+<li>城市与数据：TaxiBJ，32×32 网格，共 1,024 个节点；</li>
+<li>输入/输出：过去 48 个半小时步预测未来 48 步，即 24 小时到 24 小时；</li>
+<li>测试窗口：4,022 个，使用真实时间戳并过滤跨缺口窗口；</li>
+<li>最终模型：AGFormer，<code>d_model=32</code>、4 个注意力头、2 层，输入含流量、时间上下文及 33 维无泄漏静态节点特征，并使用 linear residual head；</li>
+<li>集成成员：seed 42、7、21、123，预测按算术平均融合；</li>
+<li>预测指标：对真实值非零位置计算 MAE/RMSE/MAPE，MAPE 使用 <code>eps=1.0</code>；</li>
+<li>模型选择在验证集完成，本报告只汇报固定测试集结果。</li>
+</ul>
+<h2>2. 最终预测精度</h2>
+<table>
+<thead>
+<tr>
+<th>scope</th>
+<th>forecast_hours</th>
+<th>MAE</th>
+<th>RMSE</th>
+<th>MAPE</th>
+<th>test_windows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>h1</td>
+<td>0.5000</td>
+<td>11.3019</td>
+<td>19.8621</td>
+<td>23.4913</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>h3</td>
+<td>1.5000</td>
+<td>12.6473</td>
+<td>22.9856</td>
+<td>26.1838</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>h6</td>
+<td>3.0000</td>
+<td>13.4194</td>
+<td>24.7530</td>
+<td>28.2789</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>h12</td>
+<td>6.0000</td>
+<td>14.1068</td>
+<td>26.2676</td>
+<td>30.6591</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>avg</td>
+<td>24.0000</td>
+<td>15.9030</td>
+<td>30.2250</td>
+<td>35.4350</td>
+<td>4022</td>
+</tr>
+</tbody>
+</table>
+<p><code>h3/h6/h12</code> 是前 3/6/12 步累计指标，而不是单独第 3/6/12 步；<code>avg</code> 汇总全部 48 个预测步。</p>
+<p><img alt="预测时域与残差" src="week7_figures/evaluation/prediction_horizon_residual.png"></p>
+<div class="figure-caption">图1　随着预测时域扩大，误差逐步上升；右图展示 h1 节点绝对残差的长尾。</div>
+
+<p>四个单模型的 24 小时平均结果如下。最佳单模型 seed42 的 MAE 为 16.1132，ensemble 为 15.9030，说明多 seed 平均主要降低了随机初始化带来的方差。</p>
+<table>
+<thead>
+<tr>
+<th>seed</th>
+<th>MAE</th>
+<th>RMSE</th>
+<th>MAPE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>42</td>
+<td>16.1132</td>
+<td>30.3198</td>
+<td>36.9075</td>
+</tr>
+<tr>
+<td>7</td>
+<td>16.9079</td>
+<td>31.9627</td>
+<td>39.7537</td>
+</tr>
+<tr>
+<td>21</td>
+<td>16.4172</td>
+<td>31.2766</td>
+<td>36.5076</td>
+</tr>
+<tr>
+<td>123</td>
+<td>16.5463</td>
+<td>31.1309</td>
+<td>38.1018</td>
+</tr>
+</tbody>
+</table>
+<h2>3. 时间与空间误差结构</h2>
+<p><img alt="时段与网格误差" src="week7_figures/evaluation/prediction_temporal_spatial.png"></p>
+<div class="figure-caption">图2　左：h1 MAE 的北京时间分布；右：1,024 个网格的 h1 MAE 分布。</div>
+
+<p>网格 MAE 中位数为 <strong>9.4145</strong>，P90 为 <strong>21.3621</strong>。最困难网格为 grid 157，MAE <strong>43.8480</strong>。时段上 16:00 的误差最高，明显高于相邻时段，提示后续应针对突变日或特殊日期检查该时段的样本构成。</p>
+<p>误差最高的时段：</p>
+<table>
+<thead>
+<tr>
+<th>local_time</th>
+<th>MAE</th>
+<th>RMSE</th>
+<th>MAPE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16:00</td>
+<td>24.4416</td>
+<td>53.8438</td>
+<td>66.5362</td>
+</tr>
+<tr>
+<td>06:30</td>
+<td>14.0519</td>
+<td>25.2563</td>
+<td>21.2142</td>
+</tr>
+<tr>
+<td>01:00</td>
+<td>14.0341</td>
+<td>24.4249</td>
+<td>17.7950</td>
+</tr>
+<tr>
+<td>04:00</td>
+<td>13.9813</td>
+<td>25.8399</td>
+<td>19.2839</td>
+</tr>
+<tr>
+<td>07:00</td>
+<td>13.6271</td>
+<td>23.5358</td>
+<td>40.6575</td>
+</tr>
+</tbody>
+</table>
+<p>误差最高的网格：</p>
+<table>
+<thead>
+<tr>
+<th>grid_id</th>
+<th>MAE</th>
+<th>RMSE</th>
+<th>MAPE</th>
+<th>valid_count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>157</td>
+<td>43.8480</td>
+<td>67.1035</td>
+<td>23.9579</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>219</td>
+<td>40.2592</td>
+<td>61.4400</td>
+<td>15.5342</td>
+<td>4021</td>
+</tr>
+<tr>
+<td>375</td>
+<td>40.1303</td>
+<td>64.8538</td>
+<td>21.5161</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>126</td>
+<td>39.9037</td>
+<td>58.2741</td>
+<td>19.6989</td>
+<td>4021</td>
+</tr>
+<tr>
+<td>188</td>
+<td>39.2566</td>
+<td>60.7336</td>
+<td>17.7643</td>
+<td>4021</td>
+</tr>
+<tr>
+<td>600</td>
+<td>37.0505</td>
+<td>58.7574</td>
+<td>16.1855</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>597</td>
+<td>35.4630</td>
+<td>53.9794</td>
+<td>18.2355</td>
+<td>4022</td>
+</tr>
+<tr>
+<td>588</td>
+<td>35.3833</td>
+<td>53.1877</td>
+<td>18.3462</td>
+<td>4021</td>
+</tr>
+<tr>
+<td>250</td>
+<td>35.2037</td>
+<td>52.5031</td>
+<td>13.7888</td>
+<td>4020</td>
+</tr>
+<tr>
+<td>281</td>
+<td>35.0104</td>
+<td>51.5775</td>
+<td>21.2021</td>
+<td>4022</td>
+</tr>
+</tbody>
+</table>
+<h2>4. 异常检测 timestep 评估</h2>
+<p><img alt="异常方法比较" src="week7_figures/evaluation/anomaly_timestep_methods.png"></p>
+<div class="figure-caption">图3　统计、重构、预测误差和最终融合对两套弱标签的 timestep precision/recall/F1。</div>
+
+<p>最终融合结果：</p>
+<table>
+<thead>
+<tr>
+<th>label_reference</th>
+<th>accuracy</th>
+<th>balanced_accuracy</th>
+<th>precision</th>
+<th>recall</th>
+<th>f1</th>
+<th>roc_auc</th>
+<th>average_precision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>level_A</td>
+<td>0.9212</td>
+<td>0.7576</td>
+<td>0.4322</td>
+<td>0.5688</td>
+<td>0.4912</td>
+<td>0.9335</td>
+<td>0.4608</td>
+</tr>
+<tr>
+<td>level_B</td>
+<td>0.9269</td>
+<td>0.9111</td>
+<td>0.1921</td>
+<td>0.8947</td>
+<td>0.3163</td>
+<td>0.9689</td>
+<td>0.4436</td>
+</tr>
+</tbody>
+</table>
+<p>Level-A 的 F1 更高，Level-B 的 recall 和 balanced accuracy 更高但 precision 较低。融合结果优于任一单类检测器的 F1，说明三类证据具有互补性；但统计检测同时参与弱标签构造和最终融合（权重 0.70），因此这些数值存在规则相关性。</p>
+<h2>5. 时空事件级评估</h2>
+<p><img alt="事件级评估" src="week7_figures/evaluation/anomaly_event_metrics.png"></p>
+<div class="figure-caption">图4　事件匹配同时要求时间重叠以及空间 IoU 或质心距离满足阈值。</div>
+
+<table>
+<thead>
+<tr>
+<th>label_reference</th>
+<th>event_precision</th>
+<th>event_recall</th>
+<th>event_f1</th>
+<th>true_event_count</th>
+<th>pred_event_count</th>
+<th>mean_detection_delay_hours</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>level_A</td>
+<td>0.4580</td>
+<td>0.5085</td>
+<td>0.4819</td>
+<td>118</td>
+<td>131</td>
+<td>0.1833</td>
+</tr>
+<tr>
+<td>level_B</td>
+<td>0.1756</td>
+<td>0.7931</td>
+<td>0.2875</td>
+<td>29</td>
+<td>131</td>
+<td>0.0217</td>
+</tr>
+</tbody>
+</table>
+<p>最终双向融合产生 131 个事件。Level-A 参考下事件 F1 为 0.4819；Level-B 参考更严格、事件数更少，recall 达 0.7931，但 precision 下降。匹配采用一对一最大基数匹配，并在非连续 30 分钟时间缺口处强制断开事件。</p>
+<h2>6. 综合判断</h2>
+<ol>
+<li>最终 AGFormer ensemble 可作为 Week5/Week6 预测误差检测和在线预测服务的固定模型；</li>
+<li>h1 表现明显优于长时域，Web 端展示 24 小时预测时应同时提示不确定性随时域增长；</li>
+<li>网格和时段误差具有显著异质性，grid 157 和 16:00 时段值得后续专项诊断；</li>
+<li>异常融合提升了弱标签一致性，但 TaxiBJ 无权威异常真值，不能将 precision/recall 解释为现实事件检测准确率。</li>
+</ol>
+<h2>7. 评估边界与复现</h2>
+<ul>
+<li>预测指标是固定测试集结果，不代表其他城市或未来年份的泛化能力；</li>
+<li>h1 残差分位数图包含零流量格，仅用于描述检测阈值面对的残差分布，不应与 masked MAE 混用；</li>
+<li>异常 weak label 来自项目统计规则，且最终融合包含统计分支；</li>
+<li>原始结果位于 <code>outputs/week7_evaluation/final_system_v1/</code>，配置为 <code>configs/week7_evaluation.yaml</code>；</li>
+<li>输入结果哈希、依赖版本和环境信息记录在该目录的 <code>summary.json</code>。</li>
+</ul></body></html>

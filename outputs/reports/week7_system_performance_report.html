@@ -1,0 +1,279 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Week7 系统性能测试报告</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 17mm; @bottom-center { content: counter(page); font-size: 8pt; color: #667085; } }
+@font-face { font-family: CJK; src: local("Noto Sans CJK SC"), local("Noto Sans CJK JP"), local("Microsoft YaHei"); }
+html { font-family: CJK, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.62; }
+body { max-width: 100%; margin: 0; }
+h1 { color: #173A5E; font-size: 24pt; line-height: 1.25; margin: 8mm 0 3mm; padding-bottom: 4mm; border-bottom: 2px solid #2563A6; }
+h2 { color: #1F5A8A; font-size: 16pt; margin: 8mm 0 3mm; border-bottom: 1px solid #D8E3ED; padding-bottom: 1.5mm; page-break-after: avoid; }
+h3 { color: #2D5E83; font-size: 12pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+p { margin: 2.2mm 0; text-align: justify; }
+ul, ol { margin: 2mm 0 3mm 6mm; padding-left: 5mm; }
+li { margin: 1mm 0; }
+blockquote { margin: 4mm 0; padding: 3mm 4mm; border-left: 4px solid #2E8B57; background: #F2F8F5; color: #244536; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.5pt; page-break-inside: avoid; }
+th { background: #EAF2F8; color: #173A5E; font-weight: 700; }
+th, td { border: 1px solid #CCD8E3; padding: 1.7mm 1.8mm; vertical-align: top; }
+tr:nth-child(even) td { background: #FAFCFD; }
+img { display: block; max-width: 100%; width: 100%; height: auto; margin: 4mm auto 1mm; page-break-inside: avoid; }
+.figure-caption { color: #5D6875; font-size: 8.4pt; text-align: center; margin: 0 5mm 5mm; page-break-before: avoid; }
+.meta { color: #5D6875; margin: 0 0 8mm; }
+.decision { border: 1px solid #9EC5AE; background: #F4FAF6; padding: 3mm 4mm; margin: 4mm 0; }
+code { background: #F1F4F7; padding: 0.2mm 1mm; border-radius: 2px; font-size: 8.5pt; }
+strong { color: #142F4B; }
+</style></head><body><h1>Week7 系统性能测试报告</h1>
+<div class="meta">Week6 生产流水线与 FastAPI 服务 · 固定 TaxiBJ 24 窗口基准 · 生成日期 2026-08-09</div>
+
+<blockquote>
+<p><strong>结论摘要：</strong> 生产可部署的 FP32 执行优化将暖启动流水线从 <strong>6.416s</strong> 降至 <strong>4.613s</strong>，端到端加速 <strong>1.39×</strong>；进程树 RSS 汇总下降 53.9%，CUDA 峰值分配下降 14.8%。FP16 精度门槛通过但本轮速度门槛未通过，动态 INT8 只保留为 CPU fallback 候选，生产继续使用 FP32。</p>
+</blockquote>
+<h2>1. 测试对象与控制变量</h2>
+<ul>
+<li>固定输入：测试集末尾 24 个连续有效窗口；</li>
+<li>固定模型：AGFormer gated+linear 四 seed ensemble；</li>
+<li>固定输出：h1 异常残差、48 步同 origin 预测、三类异常分数、融合掩码与事件；</li>
+<li>baseline：batch=8、2 个 DataLoader workers、分别执行 h1 与 forecast、每次重拟合统计量；</li>
+<li>optimized：batch=8、worker=0、共享 full-sequence 推理、统计缓存、关闭未使用注意力矩阵物化；</li>
+<li>每个 pipeline variant 单次顺序执行；API 每端点 2 次 warm-up + 100 次本机顺序请求。</li>
+</ul>
+<h2>2. 端到端耗时与资源</h2>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>pipeline_seconds</th>
+<th>model_inference_seconds</th>
+<th>forecast_inference_seconds</th>
+<th>statistical_seconds</th>
+<th>peak_rss_mib</th>
+<th>cuda_peak_allocated_mib</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>baseline_fp32</td>
+<td>6.4161</td>
+<td>2.0058</td>
+<td>1.7411</td>
+<td>1.7231</td>
+<td>3881.5195</td>
+<td>826.2471</td>
+</tr>
+<tr>
+<td>optimized_cold_fp32</td>
+<td>6.1063</td>
+<td>3.0868</td>
+<td>0.0000</td>
+<td>1.9276</td>
+<td>2793.1953</td>
+<td>703.7471</td>
+</tr>
+<tr>
+<td>optimized_warm_fp32</td>
+<td>4.6133</td>
+<td>3.3640</td>
+<td>0.0000</td>
+<td>0.0377</td>
+<td>1791.1523</td>
+<td>703.7471</td>
+</tr>
+<tr>
+<td>optimized_warm_fp16</td>
+<td>4.5962</td>
+<td>3.3825</td>
+<td>0.0000</td>
+<td>0.0336</td>
+<td>1894.3789</td>
+<td>419.6846</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="流水线资源" src="week7_figures/performance/pipeline_time_memory.png"></p>
+<div class="figure-caption">图1　各执行策略的端到端耗时、进程树 RSS 汇总和 CUDA 峰值分配。</div>
+
+<p>暖启动 FP32 是正式生产候选：端到端加速 1.39×，同时减少 worker 带来的进程树 RSS。冷启动 FP32 仍需构建统计缓存，因此只获得较小收益。</p>
+<h2>3. 瓶颈定位与代码优化</h2>
+<p><img alt="阶段对比" src="week7_figures/performance/pipeline_stage_comparison.png"></p>
+<div class="figure-caption">图2　baseline 与 optimized warm FP32 的关键阶段耗时。</div>
+
+<table>
+<thead>
+<tr>
+<th>瓶颈</th>
+<th>修改</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>h1 与 Web forecast 重复加载四个 checkpoint 并重复前向</td>
+<td>24 个窗口一次输出完整序列，h1 与最新 forecast 共享</td>
+<td>独立 forecast 阶段由 1.741s 降至近 0</td>
+</tr>
+<tr>
+<td>每次实时调用都拟合 inflow/outflow slot statistics</td>
+<td>以数据 SHA256、train_len、时区与规则参数构建指纹缓存</td>
+<td>统计阶段由 1.723s 降至 0.038s</td>
+</tr>
+<tr>
+<td>MultiheadAttention 默认返回但调用方丢弃权重</td>
+<td>普通预测 <code>need_weights=False</code>，XAI 时显式开启</td>
+<td>FP32 fusion mask 保持完全一致</td>
+</tr>
+<tr>
+<td>24 窗口仍启动 2 个 DataLoader workers</td>
+<td>实测后改为 worker=0</td>
+<td>减少进程树 RSS 与启动开销</td>
+</tr>
+<tr>
+<td>API 每次重新转换事件时间并循环映射坐标</td>
+<td>mtime-aware 派生缓存 + vectorized merge</td>
+<td>历史事件/统计端点明显加速</td>
+</tr>
+</tbody>
+</table>
+<h2>4. Batch size 扫描</h2>
+<p><img alt="Batch sweep" src="week7_figures/performance/batch_sweep.png"></p>
+<div class="figure-caption">图3　24 个窗口、四模型 ensemble 在不同 micro-batch 下的延迟与 CUDA 显存。</div>
+
+<table>
+<thead>
+<tr>
+<th>batch_size</th>
+<th>latency_seconds_median</th>
+<th>latency_seconds_min</th>
+<th>latency_seconds_max</th>
+<th>cuda_peak_allocated_mib_max</th>
+<th>max_abs_diff_vs_first_batch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4</td>
+<td>2.6718</td>
+<td>2.3823</td>
+<td>2.9613</td>
+<td>360.4971</td>
+<td>0.0000</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2.2359</td>
+<td>2.1229</td>
+<td>2.3489</td>
+<td>703.7471</td>
+<td>0.0000</td>
+</tr>
+<tr>
+<td>12</td>
+<td>2.4614</td>
+<td>2.3596</td>
+<td>2.5632</td>
+<td>1045.9971</td>
+<td>0.0000</td>
+</tr>
+<tr>
+<td>24</td>
+<td>2.5491</td>
+<td>2.4911</td>
+<td>2.6071</td>
+<td>2074.2471</td>
+<td>0.0000</td>
+</tr>
+</tbody>
+</table>
+<p>batch=8 的中位延迟最低；batch=24 将峰值显存推至约 2,074 MiB，速度反而变慢。因此正式配置选择 batch=8，而不是盲目使用最大 batch。</p>
+<h2>5. 数值一致性门禁</h2>
+<ul>
+<li>FP32 scores 的 fusion mask 不一致率：<strong>0.0</strong>；</li>
+<li>FP32 h1 <code>pred_flow</code> 最大绝对差：<strong>0.00012207</strong>；</li>
+<li>forecast 的 city/member/origin/timestamps 完全一致，target indices/step 完全一致；</li>
+<li>48×1024 forecast 最大绝对差：<strong>0.00009155</strong>，低于 0.001 门槛；</li>
+<li>正式判断：<code>deploy_fp32_execution_optimizations=True</code>。</li>
+</ul>
+<h2>6. FP16 与动态 INT8</h2>
+<p>FP16 对四个时期的 256 个窗口进行了补充核验：masked MAE 从 10.305124 变为 10.305077，变化 -0.000048；融合掩码不一致率为 0.0。质量门槛通过，但同轮模型推理加速比仅 <strong>0.9945×</strong>，低于 1.05，因此 <code>deploy_fp16=False</code>。</p>
+<p>CPU dynamic INT8 microbenchmark 的速度比为 1.305×，state_dict 仅缩小 1.24%，且只覆盖单模型、单窗口和 Linear 动态量化。当前生产推理在 CUDA 上运行，因此不部署 INT8，只把它记录为 CPU fallback 候选。</p>
+<h2>7. API 响应性能</h2>
+<p><img alt="API speedup" src="week7_figures/performance/api_speedup.png"></p>
+<div class="figure-caption">图4　优化后平均延迟相对 Week7 初始固定 API 基线的比值。</div>
+
+<table>
+<thead>
+<tr>
+<th>endpoint</th>
+<th>mean_ms_baseline</th>
+<th>mean_ms_optimized</th>
+<th>p95_ms_baseline</th>
+<th>p95_ms_optimized</th>
+<th>mean_speedup</th>
+<th>result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>status</td>
+<td>1.3308</td>
+<td>1.2725</td>
+<td>1.4688</td>
+<td>1.5758</td>
+<td>1.0458</td>
+<td>faster</td>
+</tr>
+<tr>
+<td>realtime_heatmap_1024_cells</td>
+<td>12.4769</td>
+<td>13.3823</td>
+<td>13.2446</td>
+<td>15.9920</td>
+<td>0.9323</td>
+<td>slower/noise</td>
+</tr>
+<tr>
+<td>forecast_48_steps_1024_cells</td>
+<td>41.8862</td>
+<td>43.9020</td>
+<td>43.0060</td>
+<td>46.6114</td>
+<td>0.9541</td>
+<td>slower/noise</td>
+</tr>
+<tr>
+<td>anomaly_detect_top20</td>
+<td>4.3330</td>
+<td>4.0410</td>
+<td>5.3741</td>
+<td>5.0019</td>
+<td>1.0723</td>
+<td>faster</td>
+</tr>
+<tr>
+<td>historical_anomalies_200</td>
+<td>19.4158</td>
+<td>12.2232</td>
+<td>20.7733</td>
+<td>13.7642</td>
+<td>1.5884</td>
+<td>faster</td>
+</tr>
+<tr>
+<td>historical_statistics</td>
+<td>16.8250</td>
+<td>9.9307</td>
+<td>18.0365</td>
+<td>11.7588</td>
+<td>1.6942</td>
+<td>faster</td>
+</tr>
+</tbody>
+</table>
+<p>历史事件查询和统计端点分别约加速 1.59× 与 1.69×。热力图和 48×1024 forecast 的完整 JSON 响应本轮略慢，说明它们主要受 Python 对象构造、JSON 序列化和 gzip 压缩限制；不应宣称 API 全面加速。</p>
+<p>优化后 API 冷启动 0.511s，空闲 RSS 125.75 MiB，基准期间峰值 RSS 137.39 MiB。</p>
+<h2>8. 测量边界与后续加固</h2>
+<ol>
+<li>pipeline variant 各运行一次且顺序固定，小差异可能受系统调度影响；</li>
+<li><code>peak_rss_mib</code> 是进程树 RSS 求和，共享页可能重复计算，不等同于物理 PSS；</li>
+<li>API 是单客户端 loopback，不包含公网、反向代理、浏览器渲染和并发压力；</li>
+<li>统计缓存按当前单进程顺序运行设计；并行 writer 场景应增加 file lock 或唯一临时文件；</li>
+<li>FP16/INT8 都由显式质量与速度门槛控制，本轮生产配置保持 FP32；</li>
+<li>正式结果位于 <code>outputs/week7_performance/final_system_v5/</code>，配置为 <code>configs/week7_performance.yaml</code>。</li>
+</ol></body></html>

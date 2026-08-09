@@ -1,0 +1,434 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Week7 模型可解释性分析报告</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 17mm; @bottom-center { content: counter(page); font-size: 8pt; color: #667085; } }
+@font-face { font-family: CJK; src: local("Noto Sans CJK SC"), local("Noto Sans CJK JP"), local("Microsoft YaHei"); }
+html { font-family: CJK, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.62; }
+body { max-width: 100%; margin: 0; }
+h1 { color: #173A5E; font-size: 24pt; line-height: 1.25; margin: 8mm 0 3mm; padding-bottom: 4mm; border-bottom: 2px solid #2563A6; }
+h2 { color: #1F5A8A; font-size: 16pt; margin: 8mm 0 3mm; border-bottom: 1px solid #D8E3ED; padding-bottom: 1.5mm; page-break-after: avoid; }
+h3 { color: #2D5E83; font-size: 12pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+p { margin: 2.2mm 0; text-align: justify; }
+ul, ol { margin: 2mm 0 3mm 6mm; padding-left: 5mm; }
+li { margin: 1mm 0; }
+blockquote { margin: 4mm 0; padding: 3mm 4mm; border-left: 4px solid #2E8B57; background: #F2F8F5; color: #244536; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.5pt; page-break-inside: avoid; }
+th { background: #EAF2F8; color: #173A5E; font-weight: 700; }
+th, td { border: 1px solid #CCD8E3; padding: 1.7mm 1.8mm; vertical-align: top; }
+tr:nth-child(even) td { background: #FAFCFD; }
+img { display: block; max-width: 100%; width: 100%; height: auto; margin: 4mm auto 1mm; page-break-inside: avoid; }
+.figure-caption { color: #5D6875; font-size: 8.4pt; text-align: center; margin: 0 5mm 5mm; page-break-before: avoid; }
+.meta { color: #5D6875; margin: 0 0 8mm; }
+.decision { border: 1px solid #9EC5AE; background: #F4FAF6; padding: 3mm 4mm; margin: 4mm 0; }
+code { background: #F1F4F7; padding: 0.2mm 1mm; border-radius: 2px; font-size: 8.5pt; }
+strong { color: #142F4B; }
+</style></head><body><h1>Week7 模型可解释性分析报告</h1>
+<div class="meta">最终 AGFormer 四 seed ensemble · 注意力、TreeSHAP 与异常上下文证据 · 生成日期 2026-08-09</div>
+
+<blockquote>
+<p><strong>结论摘要：</strong> 跨四个 checkpoint、四个日期和各层聚合后的非线性 Transformer-GCN 平均时间注意力画像较为分散，其归一化熵为 <strong>0.9956</strong>；TreeSHAP 代理显示历史流量合计贡献占 <strong>97.43%</strong>，日历上下文占 2.33%。131 个异常事件中有 82 个找到天气或日历候选证据，49 个没有外部上下文匹配。所有结论均为模型行为或相关证据，不是因果证明。</p>
+</blockquote>
+<h2>1. 解释对象与三类方法</h2>
+<table>
+<thead>
+<tr>
+<th>分析</th>
+<th>解释对象</th>
+<th>方法</th>
+<th>主要边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>时间/空间注意力</td>
+<td>非线性 Transformer-GCN 分支</td>
+<td>原生 head-averaged attention 与 adaptive adjacency</td>
+<td>不覆盖 parallel linear residual head</td>
+</tr>
+<tr>
+<td>特征重要性</td>
+<td>完整四 seed ensemble 的 h1 输出</td>
+<td>时间留出的 ExtraTrees 行为代理 + TreeSHAP</td>
+<td>解释代理近似，不是直接模型梯度</td>
+</tr>
+<tr>
+<td>异常原因</td>
+<td>131 个融合异常事件</td>
+<td>天气、日历、形态和可选外部事件匹配</td>
+<td>候选证据，不是校准概率或因果结论</td>
+</tr>
+</tbody>
+</table>
+<p>模型输入规则与最终评估一致：TaxiBJ、4,022 个 gap-aware 测试窗口、48 步历史流量、7 个时间/日历通道和 33 维无泄漏静态节点特征。</p>
+<h2>2. 时间注意力分析</h2>
+<p>注意力抽样覆盖测试集首、中、末四个日期，窗口索引为 [0, 1340, 2680, 4021]。这是一组定性覆盖样本，不是全测试集的统计估计。</p>
+<p><img alt="时间注意力" src="week7_figures/interpretability/attention_temporal_heatmap.png"></p>
+<div class="figure-caption">图1　两层 AGFormer 非线性分支的平均时间注意力矩阵及最后 query 的 lag profile。</div>
+
+<p>最后 query 权重最高的滞后：</p>
+<table>
+<thead>
+<tr>
+<th>layer</th>
+<th>lag_steps</th>
+<th>lag_hours</th>
+<th>attention_weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>25</td>
+<td>12.5000</td>
+<td>0.0298</td>
+</tr>
+<tr>
+<td>1</td>
+<td>20</td>
+<td>10.0000</td>
+<td>0.0280</td>
+</tr>
+<tr>
+<td>1</td>
+<td>26</td>
+<td>13.0000</td>
+<td>0.0277</td>
+</tr>
+<tr>
+<td>1</td>
+<td>19</td>
+<td>9.5000</td>
+<td>0.0276</td>
+</tr>
+<tr>
+<td>1</td>
+<td>22</td>
+<td>11.0000</td>
+<td>0.0271</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0</td>
+<td>0.0000</td>
+<td>0.0264</td>
+</tr>
+<tr>
+<td>2</td>
+<td>18</td>
+<td>9.0000</td>
+<td>0.0263</td>
+</tr>
+<tr>
+<td>2</td>
+<td>19</td>
+<td>9.5000</td>
+<td>0.0258</td>
+</tr>
+<tr>
+<td>2</td>
+<td>17</td>
+<td>8.5000</td>
+<td>0.0253</td>
+</tr>
+<tr>
+<td>2</td>
+<td>37</td>
+<td>18.5000</td>
+<td>0.0242</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>最近 3 小时注意力质量占比：<strong>0.1223</strong>；</li>
+<li>平均时间注意力归一化熵：<strong>0.9956</strong>。</li>
+</ul>
+<p>接近 1 的熵说明<strong>聚合后的平均 attention profile</strong> 未集中在少数时间步；不同模型或窗口各自集中的注意力也可能在平均后呈现分散，因此不能将该结论外推到每个样本。第一层的聚合画像较关注约 9.5–13 小时前的输入，第二层同时关注最近时刻与 8.5–9.5 小时前信息。由于最终模型存在 linear residual head，不能据此断言最终预测主要由这些滞后驱动。</p>
+<h2>3. 空间自适应邻接分析</h2>
+<p><img alt="空间注意力" src="week7_figures/interpretability/attention_spatial_summary.png"></p>
+<div class="figure-caption">图2　非线性分支 adaptive adjacency 的节点集中度、熵及网络摘要。</div>
+
+<ul>
+<li>adaptive adjacency 平均行熵：<strong>0.7261</strong>；</li>
+<li>每个目标节点 top-k 权重平均集中度：<strong>0.2238</strong>。</li>
+</ul>
+<p>该图显示模型学习到了非均匀节点关系，但只覆盖 learned adaptive graph。预定义 spatial GCN 和 parallel linear residual head 是独立路径，因此这里不是完整空间贡献分解。</p>
+<h2>4. TreeSHAP 全局特征重要性</h2>
+<p>代理模型使用前 80% 测试窗口拟合、后 20% 时间留出验证，验证 R² 为 <strong>0.9926</strong>、MAE 为 <strong>4.4381</strong> flow units。SHAP 平均加法误差为 0.00000413，说明 TreeSHAP 分解本身数值一致。</p>
+<p><img alt="SHAP 特征" src="week7_figures/interpretability/shap_feature_importance.png"></p>
+<div class="figure-caption">图3　完整 ensemble h1 行为代理的单特征 mean |SHAP| 排名。</div>
+
+<table>
+<thead>
+<tr>
+<th>importance_rank</th>
+<th>feature</th>
+<th>feature_group</th>
+<th>mean_abs_shap</th>
+<th>mean_signed_shap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>inflow_lag_1</td>
+<td>inflow_history</td>
+<td>16.7158</td>
+<td>-1.1349</td>
+</tr>
+<tr>
+<td>2</td>
+<td>outflow_lag_1</td>
+<td>outflow_history</td>
+<td>16.2779</td>
+<td>-0.1694</td>
+</tr>
+<tr>
+<td>3</td>
+<td>outflow_lag_47</td>
+<td>outflow_history</td>
+<td>7.7937</td>
+<td>-0.0081</td>
+</tr>
+<tr>
+<td>4</td>
+<td>inflow_lag_2</td>
+<td>inflow_history</td>
+<td>6.1749</td>
+<td>-0.2881</td>
+</tr>
+<tr>
+<td>5</td>
+<td>outflow_lag_2</td>
+<td>outflow_history</td>
+<td>5.4363</td>
+<td>-0.3500</td>
+</tr>
+<tr>
+<td>6</td>
+<td>inflow_lag_48</td>
+<td>inflow_history</td>
+<td>5.1043</td>
+<td>-0.1255</td>
+</tr>
+<tr>
+<td>7</td>
+<td>outflow_lag_48</td>
+<td>outflow_history</td>
+<td>4.6723</td>
+<td>-0.1573</td>
+</tr>
+<tr>
+<td>8</td>
+<td>inflow_lag_47</td>
+<td>inflow_history</td>
+<td>4.5031</td>
+<td>0.0096</td>
+</tr>
+<tr>
+<td>9</td>
+<td>inflow_lag_46</td>
+<td>inflow_history</td>
+<td>3.9451</td>
+<td>0.0822</td>
+</tr>
+<tr>
+<td>10</td>
+<td>inflow_lag_3</td>
+<td>inflow_history</td>
+<td>3.4422</td>
+<td>-0.0439</td>
+</tr>
+<tr>
+<td>11</td>
+<td>outflow_lag_3</td>
+<td>outflow_history</td>
+<td>2.2361</td>
+<td>-0.1025</td>
+</tr>
+<tr>
+<td>12</td>
+<td>outflow_lag_46</td>
+<td>outflow_history</td>
+<td>2.1179</td>
+<td>-0.1617</td>
+</tr>
+<tr>
+<td>13</td>
+<td>inflow_lag_4</td>
+<td>inflow_history</td>
+<td>1.3223</td>
+<td>0.0021</td>
+</tr>
+<tr>
+<td>14</td>
+<td>outflow_lag_45</td>
+<td>outflow_history</td>
+<td>0.8772</td>
+<td>-0.0212</td>
+</tr>
+<tr>
+<td>15</td>
+<td>inflow_lag_45</td>
+<td>inflow_history</td>
+<td>0.7994</td>
+<td>-0.1005</td>
+</tr>
+</tbody>
+</table>
+<p>排名靠前的特征集中在最近 1–4 个半小时步和输入窗口末端的 lag 46–48，说明模型行为同时依赖短期惯性和接近前一日同一位置的历史边界信息。</p>
+<p><img alt="SHAP 分组" src="week7_figures/interpretability/shap_group_importance.png"></p>
+<div class="figure-caption">图4　按流量、日历与静态节点特征组汇总的 mean |SHAP| 占比。</div>
+
+<table>
+<thead>
+<tr>
+<th>feature_group</th>
+<th>feature_count</th>
+<th>mean_abs_shap</th>
+<th>importance_share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>inflow_history</td>
+<td>48</td>
+<td>44.2893</td>
+<td>0.4980</td>
+</tr>
+<tr>
+<td>outflow_history</td>
+<td>48</td>
+<td>42.3530</td>
+<td>0.4763</td>
+</tr>
+<tr>
+<td>time_calendar</td>
+<td>7</td>
+<td>2.0730</td>
+<td>0.0233</td>
+</tr>
+<tr>
+<td>static_road</td>
+<td>5</td>
+<td>0.0397</td>
+<td>0.0004</td>
+</tr>
+<tr>
+<td>static_poi</td>
+<td>11</td>
+<td>0.0395</td>
+<td>0.0004</td>
+</tr>
+<tr>
+<td>static_satellite</td>
+<td>5</td>
+<td>0.0385</td>
+<td>0.0004</td>
+</tr>
+<tr>
+<td>static_geography</td>
+<td>4</td>
+<td>0.0381</td>
+<td>0.0004</td>
+</tr>
+<tr>
+<td>static_distance</td>
+<td>2</td>
+<td>0.0238</td>
+<td>0.0003</td>
+</tr>
+<tr>
+<td>static_transit_density</td>
+<td>3</td>
+<td>0.0211</td>
+<td>0.0002</td>
+</tr>
+<tr>
+<td>static_bus_routes</td>
+<td>1</td>
+<td>0.0080</td>
+<td>0.0001</td>
+</tr>
+<tr>
+<td>static_rail</td>
+<td>2</td>
+<td>0.0060</td>
+<td>0.0001</td>
+</tr>
+</tbody>
+</table>
+<p>历史 inflow/outflow 合计占 97.43%，日历上下文占 2.33%。静态特征单组占比较小，但这不等于静态特征“无用”：代理输入压缩、门控交互以及模型对不同节点的条件化效应都会降低简单全局 mean |SHAP|。</p>
+<h2>5. 异常上下文证据</h2>
+<p><img alt="异常上下文" src="week7_figures/interpretability/anomaly_cause_distribution.png"></p>
+<div class="figure-caption">图5　131 个融合事件的首要上下文候选分布。</div>
+
+<table>
+<thead>
+<tr>
+<th>primary_context_candidate</th>
+<th>primary_evidence_type</th>
+<th>event_count</th>
+<th>mean_max_score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no_external_context_match</td>
+<td>none</td>
+<td>49</td>
+<td>0.7768</td>
+</tr>
+<tr>
+<td>extreme_temperature</td>
+<td>weather</td>
+<td>46</td>
+<td>0.8177</td>
+</tr>
+<tr>
+<td>strong_wind</td>
+<td>weather</td>
+<td>17</td>
+<td>0.8032</td>
+</tr>
+<tr>
+<td>official_holiday</td>
+<td>calendar</td>
+<td>13</td>
+<td>0.7081</td>
+</tr>
+<tr>
+<td>makeup_workday</td>
+<td>calendar</td>
+<td>3</td>
+<td>0.8445</td>
+</tr>
+<tr>
+<td>weekend_pattern</td>
+<td>calendar</td>
+<td>3</td>
+<td>0.7054</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="天气上下文" src="week7_figures/interpretability/anomaly_weather_context.png"></p>
+<div class="figure-caption">图6　异常事件对应的温度、风速与检测分数分布。</div>
+
+<ul>
+<li>天气覆盖率：100.00%；</li>
+<li>节假日事件：13 个；周末事件：19 个；调休工作日：3 个；</li>
+<li>未配置外部新闻/活动表，因此匹配新闻事件数为 0；</li>
+<li><code>event_type</code> 只保留为检测器形态标签，不冒充现实原因。</li>
+</ul>
+<h2>6. 综合解释</h2>
+<ol>
+<li>完整模型仍以历史流量为主，linear residual head 与最近时刻特征共同强化了短期惯性；</li>
+<li>非线性注意力分支呈高熵、分散式聚合，更像对多个时间位置的补充校正，而不是单一关键 lag 选择器；</li>
+<li>learned adaptive graph 存在节点选择性，但不能替代预定义空间图的解释；</li>
+<li>天气和日历能为部分异常提供合理上下文，49 个事件没有外部匹配，报告应保持“未知”而不是强行分类原因。</li>
+</ol>
+<h2>7. 解释边界与复现</h2>
+<ul>
+<li>Attention 不等于特征贡献，更不等于因果关系；</li>
+<li>TreeSHAP 解释的是高拟合度代理，必须与 R²/MAE 一起阅读；</li>
+<li>代理的日历特征只取上下文最后时刻，流量特征保留完整 48 步；</li>
+<li>当前无新闻表，任何现实事件归因均未得到外部来源验证；</li>
+<li>原始 CSV、NPZ、图片、模型和 manifest 位于 <code>outputs/week7_interpretability/final_system_v1/</code>，正式配置为 <code>configs/week7_interpretability.yaml</code>。</li>
+</ul></body></html>
