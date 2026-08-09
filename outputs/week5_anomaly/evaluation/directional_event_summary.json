@@ -4,6 +4,13 @@
   "num_windows": 4022,
   "min_cells": 6,
   "event_tolerance_steps": 1,
+  "event_match_mode": "spatiotemporal",
+  "event_building": {
+    "use_spatial_continuity": true,
+    "spatial_iou_threshold": 0.05,
+    "centroid_distance_threshold": 4.0,
+    "temporal_reference_artifact": "outputs/week5_anomaly/evaluation/temporal_event_level_metrics.csv"
+  },
   "direction_assignment": "Method detections are split into high/low by the observed inflow slot-normalized z-score sign; bidirectional uses the original mask.",
   "label_positive_rates": {
     "high": {
@@ -87,6 +94,78 @@
       "method": "fusion",
       "direction": "high",
       "label_level": "level_A",
+      "spatial_iou_threshold": 0.05,
+      "centroid_distance_threshold": 4.0,
+      "event_match_mode": "spatiotemporal",
+      "event_precision": 0.5882352941176471,
+      "event_recall": 0.5084745762711864,
+      "event_f1": 0.5454545454545454,
+      "event_hit_rate": 0.5084745762711864,
+      "matched_true_events": 60,
+      "matched_pred_events": 60,
+      "true_event_count": 118,
+      "pred_event_count": 102,
+      "mean_detection_delay_steps": 0.36666666666666664,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.18333333333333332,
+      "mean_abs_duration_error_steps": 1.1166666666666667,
+      "mean_abs_duration_error_hours": 0.5583333333333333,
+      "mean_matched_spatial_iou": 0.3365456582977164,
+      "mean_matched_centroid_distance": 3.7136709235174226
+    },
+    "low": {
+      "method": "statistical",
+      "direction": "low",
+      "label_level": "level_A",
+      "spatial_iou_threshold": 0.05,
+      "centroid_distance_threshold": 4.0,
+      "event_match_mode": "spatiotemporal",
+      "event_precision": 0.6285714285714286,
+      "event_recall": 0.8461538461538461,
+      "event_f1": 0.721311475409836,
+      "event_hit_rate": 0.8461538461538461,
+      "matched_true_events": 44,
+      "matched_pred_events": 44,
+      "true_event_count": 52,
+      "pred_event_count": 70,
+      "mean_detection_delay_steps": 0.0,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.0,
+      "mean_abs_duration_error_steps": 3.6363636363636362,
+      "mean_abs_duration_error_hours": 1.8181818181818181,
+      "mean_matched_spatial_iou": 0.8330781925981197,
+      "mean_matched_centroid_distance": 0.9385518277623077
+    },
+    "bidirectional": {
+      "method": "fusion",
+      "direction": "bidirectional",
+      "label_level": "level_A",
+      "spatial_iou_threshold": 0.05,
+      "centroid_distance_threshold": 4.0,
+      "event_match_mode": "spatiotemporal",
+      "event_precision": 0.5419847328244275,
+      "event_recall": 0.40804597701149425,
+      "event_f1": 0.46557377049180326,
+      "event_hit_rate": 0.40804597701149425,
+      "matched_true_events": 71,
+      "matched_pred_events": 71,
+      "true_event_count": 174,
+      "pred_event_count": 131,
+      "mean_detection_delay_steps": 1.8873239436619718,
+      "median_detection_delay_steps": 0.0,
+      "mean_detection_delay_hours": 0.9436619718309859,
+      "mean_abs_duration_error_steps": 4.225352112676056,
+      "mean_abs_duration_error_hours": 2.112676056338028,
+      "mean_matched_spatial_iou": 0.3018648228195271,
+      "mean_matched_centroid_distance": 3.5431123588211975
+    }
+  },
+  "best_temporal_event_rows_by_direction": {
+    "high": {
+      "method": "fusion",
+      "direction": "high",
+      "label_level": "level_A",
+      "event_match_mode": "temporal",
       "event_precision": 0.631578947368421,
       "event_recall": 0.5405405405405406,
       "event_f1": 0.5825242718446602,
@@ -105,6 +184,7 @@
       "method": "statistical",
       "direction": "low",
       "label_level": "level_A",
+      "event_match_mode": "temporal",
       "event_precision": 0.6721311475409836,
       "event_recall": 0.803921568627451,
       "event_f1": 0.7321428571428572,
@@ -123,6 +203,7 @@
       "method": "fusion",
       "direction": "bidirectional",
       "label_level": "level_A",
+      "event_match_mode": "temporal",
       "event_precision": 0.5853658536585366,
       "event_recall": 0.43636363636363634,
       "event_f1": 0.5,
@@ -224,6 +305,147 @@
         "method": "fusion",
         "direction": "high",
         "label_level": "level_A",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.5882352941176471,
+        "event_recall": 0.5084745762711864,
+        "event_f1": 0.5454545454545454,
+        "event_hit_rate": 0.5084745762711864,
+        "matched_true_events": 60,
+        "matched_pred_events": 60,
+        "true_event_count": 118,
+        "pred_event_count": 102,
+        "mean_detection_delay_steps": 0.36666666666666664,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.18333333333333332,
+        "mean_abs_duration_error_steps": 1.1166666666666667,
+        "mean_abs_duration_error_hours": 0.5583333333333333,
+        "mean_matched_spatial_iou": 0.3365456582977164,
+        "mean_matched_centroid_distance": 3.7136709235174226
+      },
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_B",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.22549019607843138,
+        "event_recall": 0.7931034482758621,
+        "event_f1": 0.3511450381679389,
+        "event_hit_rate": 0.7931034482758621,
+        "matched_true_events": 23,
+        "matched_pred_events": 23,
+        "true_event_count": 29,
+        "pred_event_count": 102,
+        "mean_detection_delay_steps": 0.043478260869565216,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.021739130434782608,
+        "mean_abs_duration_error_steps": 2.0,
+        "mean_abs_duration_error_hours": 1.0,
+        "mean_matched_spatial_iou": 0.3129648619392506,
+        "mean_matched_centroid_distance": 3.3216946257378748
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_A",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.4482758620689655,
+        "event_recall": 0.25,
+        "event_f1": 0.32098765432098764,
+        "event_hit_rate": 0.25,
+        "matched_true_events": 13,
+        "matched_pred_events": 13,
+        "true_event_count": 52,
+        "pred_event_count": 29,
+        "mean_detection_delay_steps": 7.6923076923076925,
+        "median_detection_delay_steps": 7.0,
+        "mean_detection_delay_hours": 3.8461538461538463,
+        "mean_abs_duration_error_steps": 16.307692307692307,
+        "mean_abs_duration_error_hours": 8.153846153846153,
+        "mean_matched_spatial_iou": 0.21210682085366722,
+        "mean_matched_centroid_distance": 2.327514627093009
+      },
+      {
+        "method": "fusion",
+        "direction": "low",
+        "label_level": "level_B",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.4482758620689655,
+        "event_recall": 0.3611111111111111,
+        "event_f1": 0.39999999999999997,
+        "event_hit_rate": 0.3611111111111111,
+        "matched_true_events": 13,
+        "matched_pred_events": 13,
+        "true_event_count": 36,
+        "pred_event_count": 29,
+        "mean_detection_delay_steps": 6.153846153846154,
+        "median_detection_delay_steps": 5.0,
+        "mean_detection_delay_hours": 3.076923076923077,
+        "mean_abs_duration_error_steps": 14.76923076923077,
+        "mean_abs_duration_error_hours": 7.384615384615385,
+        "mean_matched_spatial_iou": 0.2121241502618896,
+        "mean_matched_centroid_distance": 2.3289241280609203
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_A",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.5419847328244275,
+        "event_recall": 0.40804597701149425,
+        "event_f1": 0.46557377049180326,
+        "event_hit_rate": 0.40804597701149425,
+        "matched_true_events": 71,
+        "matched_pred_events": 71,
+        "true_event_count": 174,
+        "pred_event_count": 131,
+        "mean_detection_delay_steps": 1.8873239436619718,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 0.9436619718309859,
+        "mean_abs_duration_error_steps": 4.225352112676056,
+        "mean_abs_duration_error_hours": 2.112676056338028,
+        "mean_matched_spatial_iou": 0.3018648228195271,
+        "mean_matched_centroid_distance": 3.5431123588211975
+      },
+      {
+        "method": "fusion",
+        "direction": "bidirectional",
+        "label_level": "level_B",
+        "spatial_iou_threshold": 0.05,
+        "centroid_distance_threshold": 4.0,
+        "event_match_mode": "spatiotemporal",
+        "event_precision": 0.26717557251908397,
+        "event_recall": 0.5303030303030303,
+        "event_f1": 0.3553299492385787,
+        "event_hit_rate": 0.5303030303030303,
+        "matched_true_events": 35,
+        "matched_pred_events": 35,
+        "true_event_count": 66,
+        "pred_event_count": 131,
+        "mean_detection_delay_steps": 2.6285714285714286,
+        "median_detection_delay_steps": 0.0,
+        "mean_detection_delay_hours": 1.3142857142857143,
+        "mean_abs_duration_error_steps": 7.4,
+        "mean_abs_duration_error_hours": 3.7,
+        "mean_matched_spatial_iou": 0.2680709053169577,
+        "mean_matched_centroid_distance": 2.9143662820297362
+      }
+    ],
+    "temporal_event_level": [
+      {
+        "method": "fusion",
+        "direction": "high",
+        "label_level": "level_A",
+        "event_match_mode": "temporal",
         "event_precision": 0.631578947368421,
         "event_recall": 0.5405405405405406,
         "event_f1": 0.5825242718446602,
@@ -242,6 +464,7 @@
         "method": "fusion",
         "direction": "high",
         "label_level": "level_B",
+        "event_match_mode": "temporal",
         "event_precision": 0.2631578947368421,
         "event_recall": 0.9259259259259259,
         "event_f1": 0.40983606557377045,
@@ -260,6 +483,7 @@
         "method": "fusion",
         "direction": "low",
         "label_level": "level_A",
+        "event_match_mode": "temporal",
         "event_precision": 0.5172413793103449,
         "event_recall": 0.29411764705882354,
         "event_f1": 0.37500000000000006,
@@ -278,6 +502,7 @@
         "method": "fusion",
         "direction": "low",
         "label_level": "level_B",
+        "event_match_mode": "temporal",
         "event_precision": 0.5172413793103449,
         "event_recall": 0.42857142857142855,
         "event_f1": 0.46875000000000006,
@@ -296,6 +521,7 @@
         "method": "fusion",
         "direction": "bidirectional",
         "label_level": "level_A",
+        "event_match_mode": "temporal",
         "event_precision": 0.5853658536585366,
         "event_recall": 0.43636363636363634,
         "event_f1": 0.5,
@@ -314,6 +540,7 @@
         "method": "fusion",
         "direction": "bidirectional",
         "label_level": "level_B",
+        "event_match_mode": "temporal",
         "event_precision": 0.3089430894308943,
         "event_recall": 0.6129032258064516,
         "event_f1": 0.41081081081081083,
@@ -333,11 +560,11 @@
   "event_paths": {
     "fusion": {
       "high": {
-        "count": 95,
+        "count": 102,
         "by_type": {
           "mass_gathering": 5,
           "traffic_jam": 6,
-          "sudden_incident": 84
+          "sudden_incident": 91
         },
         "path": "outputs/week5_anomaly/evaluation/events_fusion_high.csv"
       },
@@ -351,11 +578,11 @@
         "path": "outputs/week5_anomaly/evaluation/events_fusion_low.csv"
       },
       "bidirectional": {
-        "count": 123,
+        "count": 131,
         "by_type": {
           "mass_gathering": 14,
           "traffic_jam": 6,
-          "sudden_incident": 103
+          "sudden_incident": 111
         },
         "path": "outputs/week5_anomaly/evaluation/events_fusion_bidirectional.csv"
       }
@@ -363,31 +590,31 @@
     "weak_labels": {
       "high": {
         "level_A": {
-          "count": 111,
+          "count": 118,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_high.csv"
         },
         "level_B": {
-          "count": 27,
+          "count": 29,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_high.csv"
         }
       },
       "low": {
         "level_A": {
-          "count": 51,
+          "count": 52,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_low.csv"
         },
         "level_B": {
-          "count": 35,
+          "count": 36,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_low.csv"
         }
       },
       "bidirectional": {
         "level_A": {
-          "count": 165,
+          "count": 174,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_A_bidirectional.csv"
         },
         "level_B": {
-          "count": 62,
+          "count": 66,
           "path": "outputs/week5_anomaly/evaluation/events_weak_level_B_bidirectional.csv"
         }
       }
@@ -395,6 +622,7 @@
   },
   "artifacts": {
     "directional_timestep_metrics": "outputs/week5_anomaly/evaluation/directional_timestep_metrics.csv",
-    "event_level_metrics": "outputs/week5_anomaly/evaluation/event_level_metrics.csv"
+    "event_level_metrics": "outputs/week5_anomaly/evaluation/event_level_metrics.csv",
+    "temporal_event_level_metrics": "outputs/week5_anomaly/evaluation/temporal_event_level_metrics.csv"
   }
 }

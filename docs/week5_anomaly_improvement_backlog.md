@@ -1,6 +1,6 @@
 # Week5 异常检测模块改进记录
 
-更新时间：2026-08-04
+更新时间：2026-08-09
 
 ## 当前基线
 
@@ -46,6 +46,12 @@ Week5 异常检测已经实现三类方法：
   --config outputs/week5_anomaly/config_used.yaml
 ```
 
+本轮执行记录（2026-08-09）：
+
+- 已按当前 `outputs/week5_anomaly/scores.npz` 与 `outputs/week5_anomaly/config_used.yaml` 重跑；
+- 结果输出到 `outputs/week5_anomaly/evaluation/directional_timestep_metrics.csv`；
+- 同时输出方向拆分后的 fusion / weak-label 事件明细，便于后续人工抽查。
+
 ### 2. 事件级评估
 
 原问题：
@@ -60,6 +66,13 @@ Week5 异常检测已经实现三类方法：
 - 预测事件和弱标签事件按时间重叠匹配；
 - 输出 event precision / recall / F1 / hit rate；
 - 同时统计 detection delay 和 duration error。
+
+本轮执行记录（2026-08-09）：
+
+- 已生成 `outputs/week5_anomaly/evaluation/event_level_metrics.csv`；
+- 纯时间事件指标保留在 `outputs/week5_anomaly/evaluation/temporal_event_level_metrics.csv`，只作为参考；
+- 汇总入口为 `outputs/week5_anomaly/evaluation/directional_event_summary.json`；
+- 后续 Week5/Week6 报告中应优先同时报告 timestep 与 event-level 指标，不能只看 timestep F1。
 
 ## 后续仍可做的工程加固
 
@@ -92,16 +105,15 @@ min_event_cells: 6
 | Level-B timestep | 0.1921 | 0.8947 | 0.3163 |
 | High-flow Level-A timestep | 0.8010 | 0.5688 | 0.6652 |
 | High-flow Level-B timestep | 0.3560 | 0.8947 | 0.5094 |
-| High-flow Level-A event | 0.6316 | 0.5405 | 0.5825 |
-| High-flow Level-B event | 0.2632 | 0.9259 | 0.4098 |
+| High-flow Level-A spatiotemporal event | 0.5882 | 0.5085 | 0.5455 |
+| High-flow Level-B spatiotemporal event | 0.2255 | 0.7931 | 0.3511 |
 
 事件输出：131 个事件，其中 `mass_gathering=14`、`traffic_jam=6`、`sudden_incident=111`。
 
 仍可继续做：
 
 1. 人工核验 50 个样本后，把人工结果写回并重新估计 weak-label 噪声。
-2. 如果 mentor 追问空间事件指标，可把 event-level matching 从时间重叠扩展为“时间 + 空间 IoU/centroid”匹配。
-3. 用更完整的道路先验或真实路网线段增强 `traffic_jam` 分类，而不是只依赖 node feature 的 road-density proxy。
+2. 用更完整的道路先验或真实路网线段增强 `traffic_jam` 分类，而不是只依赖 node feature 的 road-density proxy。
 
 ## Reviewer caveats（2026-08-04）
 

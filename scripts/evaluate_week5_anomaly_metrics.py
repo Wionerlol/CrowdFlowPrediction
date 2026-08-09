@@ -25,8 +25,8 @@ sys.path.insert(0, str(ROOT))
 from src.anomaly.evaluation import (
     directional_node_mask,
     evaluate_directional_event_metrics,
+    evaluate_directional_spatiotemporal_event_metrics,
     evaluate_directional_timestep_metrics,
-    events_from_time_flags,
     summarize_rows,
 )
 from src.anomaly.prediction_error import load_city_data
@@ -110,18 +110,96 @@ def build_directional_labels(
     return labels
 
 
+def label_node_mask_from_z(z: np.ndarray, direction: str, threshold: float) -> np.ndarray:
+    if direction == "high":
+        return z > threshold
+    if direction == "low":
+        return z < -threshold
+    if direction == "bidirectional":
+        return np.abs(z) > threshold
+    raise ValueError("direction must be 'high', 'low', or 'bidirectional'")
+
+
+def build_directional_label_node_masks(
+    *,
+    z: np.ndarray,
+    labels: dict[str, dict[str, np.ndarray]],
+    stat_cfg: dict[str, Any],
+) -> dict[str, dict[str, np.ndarray]]:
+    """Build node-level weak-label footprints while preserving timestep labels.
+
+    Level-A/Level-B weak labels are timestep labels. For event-level spatial
+    matching we use the inflow z-score footprint on those weak-positive
+    timesteps, so the event count remains consistent with the weak-label rule
+    while adding a spatial footprint for matching.
+    """
+
+    out: dict[str, dict[str, np.ndarray]] = {}
+    threshold = float(stat_cfg.get("sigma_z", 3.0))
+    for direction, level_labels in labels.items():
+        base = label_node_mask_from_z(z, direction, threshold)
+        out[direction] = {
+            level: base & np.asarray(flags, dtype=bool)[:, None]
+            for level, flags in level_labels.items()
+        }
+    return out
+
+
+def event_spatial_thresholds(cfg: dict[str, Any]) -> tuple[float | None, float | None]:
+    events_cfg = cfg.get("events", {})
+    use_spatial_continuity = bool(events_cfg.get("use_spatial_continuity", False))
+    spatial_iou_threshold = (
+        float(events_cfg["spatial_iou_threshold"])
+        if use_spatial_continuity and events_cfg.get("spatial_iou_threshold") is not None
+        else None
+    )
+    centroid_distance_threshold = (
+        float(events_cfg["centroid_distance_threshold"])
+        if use_spatial_continuity and events_cfg.get("centroid_distance_threshold") is not None
+        else None
+    )
+    return spatial_iou_threshold, centroid_distance_threshold
+
+
+def load_road_density(city: str, expected_nodes: int) -> np.ndarray | None:
+    path = ROOT / "data/processed" / f"node_features_{city}.npy"
+    if not path.exists():
+        return None
+    features = np.load(path)
+    if features.ndim != 2 or features.shape[0] != expected_nodes or features.shape[1] <= 6:
+        return None
+    return features[:, 6].astype(np.float32, copy=False)
+
+
+def optional_score(scores: np.lib.npyio.NpzFile, key: str) -> np.ndarray | None:
+    if key not in scores.files:
+        return None
+    return scores[key].astype(np.float32)
+
+
 def write_events(
     *,
     output_dir: Path,
     timestamps: np.ndarray,
-    labels: dict[str, dict[str, np.ndarray]],
+    label_masks: dict[str, dict[str, np.ndarray]],
     fusion_mask: np.ndarray,
     fusion_score: np.ndarray,
     z: np.ndarray,
     grid_shape: tuple[int, int],
     min_cells: int,
+    spatial_iou_threshold: float | None,
+    centroid_distance_threshold: float | None,
+    inflow: np.ndarray | None = None,
+    outflow: np.ndarray | None = None,
+    statistical_score: np.ndarray | None = None,
+    reconstruction_score: np.ndarray | None = None,
+    reconstruction_error: np.ndarray | None = None,
+    prediction_score: np.ndarray | None = None,
+    prediction_residual: np.ndarray | None = None,
+    road_density: np.ndarray | None = None,
 ) -> dict[str, Any]:
     event_paths: dict[str, Any] = {"fusion": {}, "weak_labels": {}}
+    weak_score = np.abs(z).astype(np.float32, copy=False)
     for direction in ["high", "low", "bidirectional"]:
         direction_mask = directional_node_mask(fusion_mask, z, direction)
         fusion_events = build_events(
@@ -130,6 +208,17 @@ def write_events(
             fusion_score,
             grid_shape=grid_shape,
             min_cells=min_cells,
+            spatial_iou_threshold=spatial_iou_threshold,
+            centroid_distance_threshold=centroid_distance_threshold,
+            inflow=inflow,
+            outflow=outflow,
+            z=z,
+            statistical_score=statistical_score,
+            reconstruction_score=reconstruction_score,
+            reconstruction_error=reconstruction_error,
+            prediction_score=prediction_score,
+            prediction_residual=prediction_residual,
+            road_density=road_density,
         )
         fusion_path = output_dir / f"events_fusion_{direction}.csv"
         pd.DataFrame(fusion_events).to_csv(fusion_path, index=False)
@@ -140,8 +229,20 @@ def write_events(
         }
 
         event_paths["weak_labels"][direction] = {}
-        for level, flags in labels[direction].items():
-            weak_events = [event.as_dict() for event in events_from_time_flags(timestamps, flags)]
+        for level, weak_mask in label_masks[direction].items():
+            weak_events = build_events(
+                timestamps,
+                weak_mask,
+                weak_score,
+                grid_shape=grid_shape,
+                min_cells=min_cells,
+                spatial_iou_threshold=spatial_iou_threshold,
+                centroid_distance_threshold=centroid_distance_threshold,
+                inflow=inflow,
+                outflow=outflow,
+                z=z,
+                road_density=road_density,
+            )
             weak_path = output_dir / f"events_weak_{level}_{direction}.csv"
             pd.DataFrame(weak_events).to_csv(weak_path, index=False)
             event_paths["weak_labels"][direction][level] = {
@@ -212,6 +313,12 @@ def main() -> None:
         outflow_stats=outflow_stats,
         stat_cfg=stat_cfg,
     )
+    label_masks = build_directional_label_node_masks(
+        z=stat_result.z,
+        labels=labels,
+        stat_cfg=stat_cfg,
+    )
+    spatial_iou_threshold, centroid_distance_threshold = event_spatial_thresholds(cfg)
 
     method_masks = {
         "statistical": stat_result.mask,
@@ -225,7 +332,7 @@ def main() -> None:
         labels=labels,
         min_cells=min_cells,
     )
-    event_rows = evaluate_directional_event_metrics(
+    temporal_event_rows = evaluate_directional_event_metrics(
         method_masks=method_masks,
         z=stat_result.z,
         labels=labels,
@@ -233,21 +340,44 @@ def main() -> None:
         min_cells=min_cells,
         tolerance_steps=int(args.event_tolerance_steps),
     )
+    event_rows = evaluate_directional_spatiotemporal_event_metrics(
+        method_masks=method_masks,
+        z=stat_result.z,
+        label_masks=label_masks,
+        timestamps=timestamps,
+        min_cells=min_cells,
+        grid_shape=grid_shape,
+        tolerance_steps=int(args.event_tolerance_steps),
+        spatial_iou_threshold=spatial_iou_threshold,
+        centroid_distance_threshold=centroid_distance_threshold,
+    )
 
     timestep_path = output_dir / "directional_timestep_metrics.csv"
     event_path = output_dir / "event_level_metrics.csv"
+    temporal_event_path = output_dir / "temporal_event_level_metrics.csv"
     pd.DataFrame(timestep_rows).to_csv(timestep_path, index=False)
     pd.DataFrame(event_rows).to_csv(event_path, index=False)
+    pd.DataFrame(temporal_event_rows).to_csv(temporal_event_path, index=False)
 
     event_paths = write_events(
         output_dir=output_dir,
         timestamps=timestamps,
-        labels=labels,
+        label_masks=label_masks,
         fusion_mask=method_masks["fusion"],
         fusion_score=scores["fusion_score"].astype(np.float32),
         z=stat_result.z,
         grid_shape=grid_shape,
         min_cells=min_cells,
+        spatial_iou_threshold=spatial_iou_threshold,
+        centroid_distance_threshold=centroid_distance_threshold,
+        inflow=optional_score(scores, "true_flow"),
+        outflow=optional_score(scores, "true_outflow"),
+        statistical_score=optional_score(scores, "stat_score"),
+        reconstruction_score=optional_score(scores, "recon_score"),
+        reconstruction_error=optional_score(scores, "reconstruction_error"),
+        prediction_score=optional_score(scores, "prediction_confidence"),
+        prediction_residual=optional_score(scores, "prediction_residual"),
+        road_density=load_road_density(city, method_masks["fusion"].shape[1]),
     )
 
     label_rates = {
@@ -272,6 +402,14 @@ def main() -> None:
         "num_windows": int(len(timestamps)),
         "min_cells": min_cells,
         "event_tolerance_steps": int(args.event_tolerance_steps),
+        "event_match_mode": "spatiotemporal",
+        "event_building": {
+            "use_spatial_continuity": spatial_iou_threshold is not None
+            or centroid_distance_threshold is not None,
+            "spatial_iou_threshold": spatial_iou_threshold,
+            "centroid_distance_threshold": centroid_distance_threshold,
+            "temporal_reference_artifact": str(temporal_event_path),
+        },
         "direction_assignment": (
             "Method detections are split into high/low by the observed inflow "
             "slot-normalized z-score sign; bidirectional uses the original mask."
@@ -280,6 +418,10 @@ def main() -> None:
         "method_direction_positive_rates": method_direction_rates,
         "best_timestep_rows_by_direction": summarize_rows(timestep_rows, metric="f1"),
         "best_event_rows_by_direction": summarize_rows(event_rows, metric="event_f1"),
+        "best_temporal_event_rows_by_direction": summarize_rows(
+            temporal_event_rows,
+            metric="event_f1",
+        ),
         "fusion_rows": {
             "timestep": [
                 row for row in timestep_rows
@@ -289,11 +431,16 @@ def main() -> None:
                 row for row in event_rows
                 if row["method"] == "fusion"
             ],
+            "temporal_event_level": [
+                row for row in temporal_event_rows
+                if row["method"] == "fusion"
+            ],
         },
         "event_paths": event_paths,
         "artifacts": {
             "directional_timestep_metrics": str(timestep_path),
             "event_level_metrics": str(event_path),
+            "temporal_event_level_metrics": str(temporal_event_path),
         },
     }
     summary_path = output_dir / "directional_event_summary.json"
