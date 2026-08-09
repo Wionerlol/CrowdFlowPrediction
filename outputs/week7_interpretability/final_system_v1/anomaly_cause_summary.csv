@@ -1,0 +1,7 @@
+primary_context_candidate,primary_evidence_type,event_count,mean_max_score,mean_evidence_priority
+no_external_context_match,none,49,0.7767739794692214,0.0
+extreme_temperature,weather,46,0.8177367876405301,0.55
+strong_wind,weather,17,0.8032487981459674,0.65
+official_holiday,calendar,13,0.708101932819073,0.8
+makeup_workday,calendar,3,0.8444792230923971,0.65
+weekend_pattern,calendar,3,0.7054250637690226,0.3499999999999999

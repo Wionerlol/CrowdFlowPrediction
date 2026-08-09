@@ -1,0 +1,76 @@
+tag: week7_final_system_evaluation_v1
+output_dir: outputs/week7_evaluation/final_system_v1
+objective: 在固定 TaxiBJ 测试集上统一评估最终预测、异常检测与 Week6 服务性能
+hypothesis: 最终 AGFormer 四 seed ensemble 与融合异常系统在保持现有数据规则时可复现既有质量指标，且单机 API 资源占用和响应延迟满足演示系统要求
+data_rules:
+  city: bj
+  test_windows: 4022
+  T_in: 48
+  T_out: 48
+  real_time_context: true
+  filter_gaps: true
+  prediction_selected_on: validation
+  prediction_evaluated_on: test
+  anomaly_reference: weak_labels_only
+
+# Fixed final-system inputs. This evaluation reads existing test artifacts and
+# does not train or modify any model checkpoint.
+prediction:
+  ensemble_result: outputs/results/agformer_gate_context_linear_ensemble_4seed.json
+  scores: outputs/week5_anomaly/scores.npz
+  consistency_tolerance: 0.0001
+
+anomaly:
+  scores: outputs/week5_anomaly/scores.npz
+  grid_shape: [32, 32]
+  min_event_cells: 6
+  z_threshold: 3.0
+  event_tolerance_steps: 1
+  spatial_iou_threshold: 0.05
+  centroid_distance_threshold: 4.0
+
+# Reuse the most recent saved realtime pipeline timings. Running this evaluator
+# must not launch GPU inference or rewrite the Week6 realtime artifacts.
+pipeline_summary: outputs/week6_pipeline/realtime/summary.json
+
+api_benchmark:
+  web_config: configs/week6_web.yaml
+  host: 127.0.0.1
+  port: 18080
+  startup_timeout_seconds: 30
+  warmups: 2
+  # 100 measured sequential requests makes p95/p99 useful as a local baseline.
+  repeats: 100
+  endpoints:
+    - name: status
+      method: GET
+      path: /api/v1/status
+    - name: realtime_heatmap_1024_cells
+      method: GET
+      path: /api/v1/heatmap
+      params:
+        source: realtime
+        value_type: observed
+    - name: forecast_48_steps_1024_cells
+      method: GET
+      path: /api/v1/predictions
+      params:
+        horizon_steps: 48
+    - name: anomaly_detect_top20
+      method: POST
+      path: /api/v1/anomaly/detect
+      json:
+        city: bj
+        source: realtime
+        top_k: 20
+    - name: historical_anomalies_200
+      method: GET
+      path: /api/v1/anomalies
+      params:
+        source: historical
+        limit: 200
+    - name: historical_statistics
+      method: GET
+      path: /api/v1/statistics
+      params:
+        source: historical

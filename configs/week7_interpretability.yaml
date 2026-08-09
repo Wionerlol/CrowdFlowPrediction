@@ -1,0 +1,56 @@
+tag: week7_interpretability_v1
+output_dir: outputs/week7_interpretability/final_system_v1
+objective: 解释最终 AGFormer ensemble 的时间/空间关注、输入特征贡献，并为 Week5 异常事件生成外部证据候选原因
+hypothesis: 最终模型主要依赖近期流量与周期时间信息，空间关系会集中于少量关键节点；高置信异常可由天气、节假日或时空形态证据提供可审计的候选解释
+seed: 2026
+device: cuda
+
+model:
+  checkpoint_tags:
+    - agformer_gate_context_linear_seed42
+    - agformer_gate_context_linear_seed7
+    - agformer_gate_context_linear_seed21
+    - agformer_gate_context_linear_seed123
+  checkpoint_root: outputs/checkpoints
+  scores: outputs/week5_anomaly/scores.npz
+  split: test
+  data_rules:
+    city: bj
+    test_windows: 4022
+    T_in: 48
+    T_out: 48
+    F_in: 9
+    real_time_context: true
+    filter_gaps: true
+    static_features: leakage_free_33d
+
+attention:
+  # Four evenly spaced test windows keep extraction bounded while covering the
+  # test period. Attention is averaged across all four final checkpoints, but
+  # it explains only the nonlinear branch, not the parallel linear output head.
+  sample_windows: 4
+  recent_steps: 6
+  top_edges_per_node: 5
+
+shap:
+  # TreeSHAP explains a held-out, time-split surrogate of the saved ensemble
+  # h1 predictions. The report must disclose surrogate fidelity.
+  sample_rows: 30000
+  explain_rows: 1000
+  n_estimators: 120
+  max_depth: 18
+  min_samples_leaf: 4
+  max_features: 0.7
+  n_jobs: 4
+
+anomaly_causes:
+  events: outputs/week5_anomaly/events.csv
+  weather: data/processed/weather_bj_merged.csv
+  holidays: data/raw/taxibj/BJ_Holiday.txt
+  timezone: Asia/Shanghai
+  # Required CSV columns: start_time,end_time,title,category,source,url.
+  # Optional spatial columns: center_row,center_col,radius_cells. Without them,
+  # a match is explicitly labeled citywide time co-occurrence, not spatial proof.
+  # Times must include a timezone or are interpreted as Asia/Shanghai.
+  external_events: null
+  external_event_tolerance_hours: 3
