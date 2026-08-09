@@ -22,10 +22,20 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.visualization.api_client import ApiError, Week6ApiClient
+from src.visualization.geo_calibration import (
+    COL_OFFSET_RANGE,
+    DEFAULT_COL_OFFSET,
+    DEFAULT_ROW_OFFSET,
+    ROW_OFFSET_RANGE,
+    adjust_display_frame,
+    adjust_display_records,
+    calibrated_bounds,
+)
 from src.visualization.kepler_maps import event_map_html, flow_map_html
 from src.visualization.satellite_maps import (
     event_satellite_map_html,
     flow_satellite_map_html,
+    plotly_ring_roads_layer,
     plotly_satellite_layer,
     satellite_caption,
 )
@@ -109,13 +119,22 @@ def render_flow_map(
     height: int,
     basemap_mode: str,
     basemap_opacity: float,
+    row_offset: int,
+    col_offset: int,
+    show_ring_roads: bool,
 ) -> None:
+    cells = adjust_display_records(
+        payload["cells"], row_offset=row_offset, col_offset=col_offset
+    )
     if basemap_mode == "satellite":
         html = flow_satellite_map_html(
-            payload["cells"], height=height, basemap_opacity=basemap_opacity
+            cells,
+            height=height,
+            basemap_opacity=basemap_opacity,
+            show_ring_roads=show_ring_roads,
         )
     else:
-        html = flow_map_html(payload["cells"], height=height)
+        html = flow_map_html(cells, height=height)
     st.iframe(html, height=height + 10)
 
 
@@ -125,13 +144,22 @@ def render_event_map(
     height: int,
     basemap_mode: str,
     basemap_opacity: float,
+    row_offset: int,
+    col_offset: int,
+    show_ring_roads: bool,
 ) -> None:
+    display_events = adjust_display_records(
+        events, row_offset=row_offset, col_offset=col_offset
+    )
     if basemap_mode == "satellite":
         html = event_satellite_map_html(
-            events, height=height, basemap_opacity=basemap_opacity
+            display_events,
+            height=height,
+            basemap_opacity=basemap_opacity,
+            show_ring_roads=show_ring_roads,
         )
     else:
-        html = event_map_html(events, height=height)
+        html = event_map_html(display_events, height=height)
     st.iframe(html, height=height + 10)
 
 
@@ -143,6 +171,9 @@ def live_tab(
     sound_enabled: bool,
     basemap_mode: str,
     basemap_opacity: float,
+    row_offset: int,
+    col_offset: int,
+    show_ring_roads: bool,
 ) -> None:
     st.subheader("城市人流实时态势")
     source_value = st.radio("显示内容", ["observed", "predicted"], format_func=lambda x: "观测人流" if x == "observed" else "h1 预测", horizontal=True)
@@ -167,9 +198,14 @@ def live_tab(
             height=map_height,
             basemap_mode=basemap_mode,
             basemap_opacity=basemap_opacity,
+            row_offset=row_offset,
+            col_offset=col_offset,
+            show_ring_roads=show_ring_roads,
         )
         if basemap_mode == "satellite":
-            st.caption(satellite_caption())
+            st.caption(
+                satellite_caption(row_offset=row_offset, col_offset=col_offset)
+            )
         st.caption(f"每 {refresh_seconds} 秒读取一次实时微批产物；地图时间为 TaxiBJ 离线实时模拟时间。")
 
     live_fragment()
@@ -181,6 +217,9 @@ def forecast_tab(
     map_height: int,
     basemap_mode: str,
     basemap_opacity: float,
+    row_offset: int,
+    col_offset: int,
+    show_ring_roads: bool,
 ) -> None:
     st.subheader("未来 24 小时人流预测动画")
     try:
@@ -196,7 +235,11 @@ def forecast_tab(
     metrics[2].metric("时间分辨率", "30 分钟")
     metrics[3].metric("模型成员", len(payload["member_tags"]))
 
-    base = pd.DataFrame(payload["cells"])
+    base = adjust_display_frame(
+        pd.DataFrame(payload["cells"]),
+        row_offset=row_offset,
+        col_offset=col_offset,
+    )
     animation_parts = []
     for frame in frames:
         part = base.copy()
@@ -220,11 +263,14 @@ def forecast_tab(
         title="未来 24 小时网格人流预测（点击播放按钮启动动画）",
     )
     if basemap_mode == "satellite":
-        figure.update_layout(map_layers=[plotly_satellite_layer(basemap_opacity)])
+        map_layers = [plotly_satellite_layer(basemap_opacity)]
+        if show_ring_roads:
+            map_layers.append(plotly_ring_roads_layer())
+        figure.update_layout(map_layers=map_layers)
     figure.update_layout(margin={"l": 0, "r": 0, "t": 45, "b": 0})
     st.plotly_chart(figure, width="stretch")
     if basemap_mode == "satellite":
-        st.caption(satellite_caption())
+        st.caption(satellite_caption(row_offset=row_offset, col_offset=col_offset))
 
     trend = pd.DataFrame({"timestamp": [item["timestamp"] for item in frames], "mean_flow": [item["mean"] for item in frames]})
     trend["timestamp"] = pd.to_datetime(trend["timestamp"])
@@ -238,6 +284,9 @@ def anomaly_tab(
     map_height: int,
     basemap_mode: str,
     basemap_opacity: float,
+    row_offset: int,
+    col_offset: int,
+    show_ring_roads: bool,
 ) -> None:
     st.subheader("异常事件查询与详情")
     filters = st.columns(5)
@@ -273,9 +322,12 @@ def anomaly_tab(
         height=map_height,
         basemap_mode=basemap_mode,
         basemap_opacity=basemap_opacity,
+        row_offset=row_offset,
+        col_offset=col_offset,
+        show_ring_roads=show_ring_roads,
     )
     if basemap_mode == "satellite":
-        st.caption(satellite_caption())
+        st.caption(satellite_caption(row_offset=row_offset, col_offset=col_offset))
 
     labels = {
         int(item["event_id"]): f"#{int(item['event_id'])} · {item.get('alert_level_zh', '')} · {item.get('event_type_zh', item.get('event_type'))} · {str(item.get('start_time', '')).replace('T', ' ')}"
@@ -356,6 +408,37 @@ def main() -> None:
             if basemap_mode == "satellite"
             else 0.72
         )
+        row_offset = DEFAULT_ROW_OFFSET
+        col_offset = DEFAULT_COL_OFFSET
+        show_ring_roads = True
+        if basemap_mode == "satellite":
+            with st.expander("地图空间校准", expanded=False):
+                st.caption(
+                    "仅移动网页展示层，不修改训练网格、节点编号、模型输入或历史结果。"
+                )
+                show_ring_roads = st.toggle("显示北京二至五环参照线", value=True)
+                row_offset = st.slider(
+                    "南北偏移（向南为正）",
+                    ROW_OFFSET_RANGE[0],
+                    ROW_OFFSET_RANGE[1],
+                    DEFAULT_ROW_OFFSET,
+                    1,
+                )
+                col_offset = st.slider(
+                    "东西偏移（向东为正）",
+                    COL_OFFSET_RANGE[0],
+                    COL_OFFSET_RANGE[1],
+                    DEFAULT_COL_OFFSET,
+                    1,
+                )
+                bounds = calibrated_bounds(
+                    row_offset=row_offset, col_offset=col_offset
+                )
+                st.caption(
+                    "当前展示边界："
+                    f"{bounds['west']:.6f}–{bounds['east']:.6f}°E，"
+                    f"{bounds['south']:.6f}–{bounds['north']:.6f}°N"
+                )
         client = Week6ApiClient(api_url)
         if st.button("检查 API", width="stretch"):
             try:
@@ -381,6 +464,9 @@ def main() -> None:
             sound_enabled=sound_enabled,
             basemap_mode=basemap_mode,
             basemap_opacity=basemap_opacity,
+            row_offset=row_offset,
+            col_offset=col_offset,
+            show_ring_roads=show_ring_roads,
         )
     elif page == "24h 预测动画":
         forecast_tab(
@@ -388,6 +474,9 @@ def main() -> None:
             map_height=map_height,
             basemap_mode=basemap_mode,
             basemap_opacity=basemap_opacity,
+            row_offset=row_offset,
+            col_offset=col_offset,
+            show_ring_roads=show_ring_roads,
         )
     elif page == "异常事件":
         anomaly_tab(
@@ -395,6 +484,9 @@ def main() -> None:
             map_height=map_height,
             basemap_mode=basemap_mode,
             basemap_opacity=basemap_opacity,
+            row_offset=row_offset,
+            col_offset=col_offset,
+            show_ring_roads=show_ring_roads,
         )
     else:
         statistics_tab(client)

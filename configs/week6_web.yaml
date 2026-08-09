@@ -7,7 +7,8 @@ api:
     - http://127.0.0.1:8501
 
 artifacts:
-  grid_meta: data/processed/grid_meta_bj.csv
+  # Display-only coordinates; training and pipeline configs keep grid_meta_bj.csv.
+  grid_meta: data/processed/grid_display_meta_bj.csv
   realtime_summary: outputs/week6_pipeline/realtime/summary.json
   realtime_scores: outputs/week6_pipeline/realtime/scores.npz
   forecast_24h: outputs/week6_pipeline/realtime/forecast_24h.npz

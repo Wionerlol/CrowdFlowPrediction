@@ -15,13 +15,15 @@
 
 ### 北京卫星底图
 
-地图默认使用项目数据收集阶段下载的 NASA/USGS Landsat‑8 北京场景作为底图。原始影像为 EPSG:32650、30 米分辨率，Web 版本已重投影到 EPSG:4326，并严格裁剪到 TaxiBJ 32×32 网格范围：
+地图默认使用项目数据收集阶段下载的 NASA/USGS Landsat‑8 北京场景作为底图。原始影像为 EPSG:32650、30 米分辨率，Web 版本已重投影到 EPSG:4326。由于原始 TaxiBJ HDF5 文件没有携带权威 bbox，项目不再把早期手工 bbox 直接视为真实地理边界，而采用独立的展示坐标校准：保持 32×32 网格的方向和尺度不变，相对原元数据向南平移 5 格、向西平移 8 格。默认展示范围为：
 
 ```text
-116.25–116.75°E，39.75–40.25°N
+116.125–116.625°E，39.671875–40.171875°N
 ```
 
-实时热力图、24 小时预测动画和异常事件地图共享同一组地理边界，避免点位与影像错位。侧边栏可以调节卫星底图透明度，也可以切换回 Kepler.gl 暗色地图。
+这项校准是严格的展示层变换：`data/processed/grid_meta_bj.csv`、节点编号、静态特征归属、邻接图、训练输入和已经生成的预测/异常结果均不改动；Web API 单独读取 `data/processed/grid_display_meta_bj.csv`。因此校准不会改变 Week4/Week5 指标，也不需要重训模型。
+
+实时热力图、24 小时预测动画和异常事件地图共享同一组展示坐标。地图还叠加了从项目现有 OpenStreetMap PBF 中提取的北京二环、三环、四环和五环作为可核验参照。侧边栏“地图空间校准”允许在安全范围内微调南北偏移 4–7 格、东西偏移 −9 至 −6 格；该控件也只移动热力图、预测和事件覆盖层，不会写回任何数据。侧边栏还可以调节卫星底图透明度、隐藏环路参照线，或切换回 Kepler.gl 暗色地图。
 
 需要注意：底图拍摄于 2015-04-16，是用于提供真实城市空间语境的静态遥感影像，并不是实时卫星画面；“实时”仅指页面上动态刷新的人流和异常检测数据。
 
@@ -29,6 +31,12 @@
 
 ```bash
 .venv/bin/python scripts/build_week6_satellite_basemap.py
+```
+
+若需要从原始网格和 OSM PBF 重新生成展示网格与环路参照层：
+
+```bash
+.venv/bin/python scripts/build_week6_display_assets.py
 ```
 
 当前 TaxiBJ 的“实时”是对离线测试集最新窗口的微批模拟，不代表已接入生产消息队列或真实在线出租车流。
@@ -50,9 +58,9 @@ FastAPI read-only artifact service :8000
              │
              ▼
 Streamlit :8501
-  ├─ PyDeck + Landsat 实时热力图（可切换 Kepler.gl 暗色地图）
-  ├─ Plotly + Landsat 48 帧预测动画
-  ├─ PyDeck + Landsat 异常事件地图与详情
+  ├─ PyDeck + Landsat + 北京环路参照的实时热力图
+  ├─ Plotly + Landsat + 北京环路参照的 48 帧预测动画
+  ├─ PyDeck + Landsat + 北京环路参照的异常事件地图与详情
   └─ 弹窗、横幅、声音和历史统计
 ```
 
@@ -178,12 +186,16 @@ Web/API 配置位于：
 configs/week6_web.yaml
 ```
 
-主要配置包括 FastAPI host/port、CORS 来源、实时与历史 artifact 路径、融合阈值、最小异常网格数和 UI 默认刷新间隔。
+主要配置包括 FastAPI host/port、CORS 来源、实时与历史 artifact 路径、融合阈值、最小异常网格数、展示网格路径和 UI 默认刷新间隔。展示校准的默认值与安全调节范围集中定义在 `src/visualization/geo_calibration.py`，避免配置与坐标计算发生漂移。
 
 ## 验证
 
 ```bash
 .venv/bin/python -m unittest -v tests.test_week6_api
+
+.venv/bin/python -m unittest -v \
+  tests.test_week6_display_calibration \
+  tests.test_week6_satellite_maps
 
 .venv/bin/python -m py_compile \
   src/api/main.py \

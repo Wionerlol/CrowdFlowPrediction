@@ -11,10 +11,13 @@ from typing import Any
 import pandas as pd
 import pydeck as pdk
 
+from src.visualization.geo_calibration import DEFAULT_COL_OFFSET, DEFAULT_ROW_OFFSET
+
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets"
 SATELLITE_IMAGE = ASSET_DIR / "beijing_landsat_20150416.webp"
 SATELLITE_METADATA = ASSET_DIR / "beijing_landsat_20150416.json"
+RING_ROADS_GEOJSON = ASSET_DIR / "beijing_ring_roads.geojson"
 FLOW_COLOR_RANGE = [
     [11, 31, 58, 25],
     [18, 60, 105, 90],
@@ -42,11 +45,26 @@ def satellite_image_uri() -> str:
     return f"data:image/webp;base64,{encoded}"
 
 
-def satellite_caption() -> str:
+@lru_cache(maxsize=1)
+def ring_roads_geojson() -> dict[str, Any]:
+    return json.loads(RING_ROADS_GEOJSON.read_text(encoding="utf-8"))
+
+
+def satellite_caption(
+    *,
+    row_offset: int = DEFAULT_ROW_OFFSET,
+    col_offset: int = DEFAULT_COL_OFFSET,
+) -> str:
     metadata = satellite_metadata()
+    vertical = f"向南 {row_offset} 格" if row_offset >= 0 else f"向北 {abs(row_offset)} 格"
+    horizontal = (
+        f"向东 {col_offset} 格" if col_offset >= 0 else f"向西 {abs(col_offset)} 格"
+    )
     return (
         f"底图：NASA/USGS Landsat‑8，北京场景 {metadata['acquired_on']}，"
-        f"原始空间分辨率 {metadata['native_resolution_m']} m；底图为静态遥感影像，并非实时卫星画面。"
+        f"原始空间分辨率 {metadata['native_resolution_m']} m；"
+        f"当前展示网格相对原元数据{vertical}、{horizontal}。该校准只影响地图显示，"
+        "不改变训练节点或模型输入；底图为静态遥感影像，并非实时卫星画面。"
     )
 
 
@@ -81,6 +99,20 @@ def _bitmap_layer(opacity: float) -> pdk.Layer:
     )
 
 
+def _ring_roads_layer(opacity: float = 0.78) -> pdk.Layer:
+    alpha = max(0, min(255, round(230 * opacity)))
+    return pdk.Layer(
+        "GeoJsonLayer",
+        data=ring_roads_geojson(),
+        stroked=True,
+        filled=False,
+        get_line_color=[255, 194, 71, alpha],
+        line_width_min_pixels=2,
+        line_width_max_pixels=5,
+        pickable=False,
+    )
+
+
 def _html(deck: pdk.Deck) -> str:
     return deck.to_html(as_string=True, notebook_display=False)
 
@@ -91,6 +123,7 @@ def flow_satellite_map_html(
     value_field: str = "value",
     height: int = 570,
     basemap_opacity: float = 0.72,
+    show_ring_roads: bool = True,
 ) -> str:
     frame = pd.DataFrame(cells)
     if frame.empty:
@@ -127,8 +160,12 @@ def flow_satellite_map_html(
         ),
         "style": {"backgroundColor": "#102a43", "color": "white"},
     }
+    layers = [_bitmap_layer(basemap_opacity)]
+    if show_ring_roads:
+        layers.append(_ring_roads_layer())
+    layers.extend([heatmap, hover_points])
     deck = pdk.Deck(
-        layers=[_bitmap_layer(basemap_opacity), heatmap, hover_points],
+        layers=layers,
         initial_view_state=_view_state(),
         map_style=None,
         tooltip=tooltip,
@@ -142,6 +179,7 @@ def event_satellite_map_html(
     *,
     height: int = 520,
     basemap_opacity: float = 0.72,
+    show_ring_roads: bool = True,
 ) -> str:
     frame = pd.DataFrame(events)
     required = {"center_lon", "center_lat"}
@@ -176,8 +214,12 @@ def event_satellite_map_html(
         ),
         "style": {"backgroundColor": "#102a43", "color": "white"},
     }
+    layers = [_bitmap_layer(basemap_opacity)]
+    if show_ring_roads:
+        layers.append(_ring_roads_layer())
+    layers.append(event_layer)
     deck = pdk.Deck(
-        layers=[_bitmap_layer(basemap_opacity), event_layer],
+        layers=layers,
         initial_view_state=_view_state(),
         map_style=None,
         tooltip=tooltip,
@@ -197,6 +239,18 @@ def plotly_satellite_layer(opacity: float = 0.72) -> dict[str, Any]:
             [east, south],
             [west, south],
         ],
+        "opacity": float(opacity),
+        "below": "traces",
+    }
+
+
+def plotly_ring_roads_layer(opacity: float = 0.78) -> dict[str, Any]:
+    return {
+        "sourcetype": "geojson",
+        "source": ring_roads_geojson(),
+        "type": "line",
+        "color": "#ffc247",
+        "line": {"width": 2.0},
         "opacity": float(opacity),
         "below": "traces",
     }

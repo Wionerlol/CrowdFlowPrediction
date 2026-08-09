@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image
@@ -14,12 +15,24 @@ from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject, transform_bounds
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.visualization.geo_calibration import (  # noqa: E402
+    DEFAULT_COL_OFFSET,
+    DEFAULT_ROW_OFFSET,
+    SOURCE_BOUNDS,
+    calibrated_bounds,
+)
+
+
 DEFAULT_SOURCE = (
     "data/raw/Landsat8_beijing/"
     "LC08_L1TP_123032_20150416_20200909_02_T1_refl.tif"
 )
 DEFAULT_OUTPUT = "src/visualization/assets/beijing_landsat_20150416.webp"
-BEIJING_BOUNDS = (116.25, 39.75, 116.75, 40.25)
+DEFAULT_DISPLAY_BOUNDS = calibrated_bounds()
 
 
 def parse_args() -> argparse.Namespace:
@@ -28,6 +41,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default=DEFAULT_OUTPUT)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--quality", type=int, default=88)
+    parser.add_argument(
+        "--bounds",
+        nargs=4,
+        type=float,
+        metavar=("WEST", "SOUTH", "EAST", "NORTH"),
+        default=None,
+        help="override display bounds; defaults to the calibrated TaxiBJ extent",
+    )
     return parser.parse_args()
 
 
@@ -47,10 +68,23 @@ def contrast_stretch(rgb: np.ndarray) -> tuple[np.ndarray, list[list[float]]]:
     return output, percentiles
 
 
-def build_basemap(source_path: Path, output_path: Path, *, width: int, quality: int) -> dict:
+def build_basemap(
+    source_path: Path,
+    output_path: Path,
+    *,
+    width: int,
+    quality: int,
+    bounds: tuple[float, float, float, float] | None = None,
+) -> dict:
     if width < 320:
         raise ValueError("width must be at least 320 pixels")
-    west, south, east, north = BEIJING_BOUNDS
+    display_bounds = DEFAULT_DISPLAY_BOUNDS
+    west, south, east, north = bounds or (
+        display_bounds["west"],
+        display_bounds["south"],
+        display_bounds["east"],
+        display_bounds["north"],
+    )
     with rasterio.open(source_path) as source:
         if source.count < 3:
             raise ValueError(f"expected at least three RGB bands in {source_path}")
@@ -82,6 +116,21 @@ def build_basemap(source_path: Path, output_path: Path, *, width: int, quality: 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     image.save(output_path, format="WEBP", quality=quality, method=6)
 
+    calibration = (
+        {
+            "mode": "display_only_translation",
+            "row_offset": DEFAULT_ROW_OFFSET,
+            "col_offset": DEFAULT_COL_OFFSET,
+            "source_bounds": SOURCE_BOUNDS,
+        }
+        if bounds is None
+        else {
+            "mode": "manual_bounds_override",
+            "row_offset": None,
+            "col_offset": None,
+            "source_bounds": SOURCE_BOUNDS,
+        }
+    )
     metadata = {
         "source": str(source_path),
         "product": "Landsat 8 Collection 2 Level-1 true-colour browse composite",
@@ -91,6 +140,7 @@ def build_basemap(source_path: Path, output_path: Path, *, width: int, quality: 
         "source_crs": source_crs,
         "output_crs": "EPSG:4326",
         "bounds": {"west": west, "south": south, "east": east, "north": north},
+        "calibration": calibration,
         "size": {"width": width, "height": height},
         "stretch_percentiles": stretch_percentiles,
         "output": str(output_path),
@@ -103,7 +153,11 @@ def build_basemap(source_path: Path, output_path: Path, *, width: int, quality: 
 def main() -> None:
     args = parse_args()
     metadata = build_basemap(
-        Path(args.source), Path(args.output), width=args.width, quality=args.quality
+        Path(args.source),
+        Path(args.output),
+        width=args.width,
+        quality=args.quality,
+        bounds=tuple(args.bounds) if args.bounds is not None else None,
     )
     print(json.dumps(metadata, ensure_ascii=False, indent=2))
 

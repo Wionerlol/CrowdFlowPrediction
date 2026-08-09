@@ -7,14 +7,25 @@
   "source_crs": "EPSG:32650",
   "output_crs": "EPSG:4326",
   "bounds": {
-    "west": 116.25,
-    "south": 39.75,
-    "east": 116.75,
-    "north": 40.25
+    "west": 116.125,
+    "south": 39.671875,
+    "east": 116.625,
+    "north": 40.171875
+  },
+  "calibration": {
+    "mode": "display_only_translation",
+    "row_offset": 5,
+    "col_offset": -8,
+    "source_bounds": {
+      "west": 116.25,
+      "south": 39.75,
+      "east": 116.75,
+      "north": 40.25
+    }
   },
   "size": {
     "width": 1280,
-    "height": 1659
+    "height": 1656
   },
   "stretch_percentiles": [
     [
@@ -22,12 +33,12 @@
       131.0
     ],
     [
-      80.0,
-      129.0
+      79.0,
+      127.0
     ],
     [
       60.0,
-      107.0
+      108.0
     ]
   ],
   "output": "src/visualization/assets/beijing_landsat_20150416.webp"
