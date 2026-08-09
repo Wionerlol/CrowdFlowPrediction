@@ -1,0 +1,291 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Week7 超参数优化方案报告</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 17mm; @bottom-center { content: counter(page); font-size: 8pt; color: #667085; } }
+@font-face { font-family: CJK; src: local("Noto Sans CJK SC"), local("Noto Sans CJK JP"), local("Microsoft YaHei"); }
+html { font-family: CJK, "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.62; }
+body { max-width: 100%; margin: 0; }
+h1 { color: #173A5E; font-size: 24pt; line-height: 1.25; margin: 8mm 0 3mm; padding-bottom: 4mm; border-bottom: 2px solid #2563A6; }
+h2 { color: #1F5A8A; font-size: 16pt; margin: 8mm 0 3mm; border-bottom: 1px solid #D8E3ED; padding-bottom: 1.5mm; page-break-after: avoid; }
+h3 { color: #2D5E83; font-size: 12pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+p { margin: 2.2mm 0; text-align: justify; }
+ul, ol { margin: 2mm 0 3mm 6mm; padding-left: 5mm; }
+li { margin: 1mm 0; }
+blockquote { margin: 4mm 0; padding: 3mm 4mm; border-left: 4px solid #2E8B57; background: #F2F8F5; color: #244536; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.5pt; page-break-inside: avoid; }
+th { background: #EAF2F8; color: #173A5E; font-weight: 700; }
+th, td { border: 1px solid #CCD8E3; padding: 1.7mm 1.8mm; vertical-align: top; }
+tr:nth-child(even) td { background: #FAFCFD; }
+img { display: block; max-width: 100%; width: 100%; height: auto; margin: 4mm auto 1mm; page-break-inside: avoid; }
+.figure-caption { color: #5D6875; font-size: 8.4pt; text-align: center; margin: 0 5mm 5mm; page-break-before: avoid; }
+.meta { color: #5D6875; margin: 0 0 8mm; }
+.decision { border: 1px solid #9EC5AE; background: #F4FAF6; padding: 3mm 4mm; margin: 4mm 0; }
+code { background: #F1F4F7; padding: 0.2mm 1mm; border-radius: 2px; font-size: 8.5pt; }
+strong { color: #142F4B; }
+</style></head><body><h1>Week7 超参数优化方案报告</h1>
+<div class="meta">AGFormer gated-context + linear residual · Optuna 自动优化设计 · 生成日期 2026-08-09</div>
+
+<blockquote>
+<p><strong>方案结论：</strong> 保持 Week4 最终模型的数据规则、特征集合和测试窗口不变，使用 Optuna TPE 在固定验证集上搜索学习率、批次、隐藏维度、注意力头数等 9 组参数。整个 study 的总预算为 <strong>30 trials / 自首次启动起 18 小时软墙钟目标</strong>，单 GPU 串行运行并启用 MedianPruner、早停、显存门禁和 SQLite 状态恢复。搜索与全预算晋级均不构建测试 Dataset；四随机种子确认胜出后，只有显式 <code>--run-final-test</code> 才会访问一次测试集。</p>
+</blockquote>
+<h2>1. 当前基线与优化目标</h2>
+<p>优化对象是当前最终预测模型，而非重新比较模型家族：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>固定值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型</td>
+<td>AGFormer，gated 时间/静态上下文，parallel linear residual head</td>
+</tr>
+<tr>
+<td>数据</td>
+<td>TaxiBJ，32×32=1,024 节点，真实时间戳，gap-aware 连续窗口</td>
+</tr>
+<tr>
+<td>输入/输出</td>
+<td>48 个历史半小时步 → 48 个未来半小时步（24 小时）</td>
+</tr>
+<tr>
+<td>动态输入</td>
+<td>inflow/outflow + 7 维时间/日历，共 9 维</td>
+</tr>
+<tr>
+<td>静态输入</td>
+<td>33 维无泄漏节点特征</td>
+</tr>
+<tr>
+<td>图结构</td>
+<td>单 spatial graph + adaptive adjacency</td>
+</tr>
+<tr>
+<td>当前 seed42 基线</td>
+<td>checkpoint epoch 22，验证 avg MAE <strong>17.3917</strong></td>
+</tr>
+<tr>
+<td>已知测试参考</td>
+<td>seed42 avg MAE 16.1132；四 seed ensemble avg MAE 15.9030</td>
+</tr>
+</tbody>
+</table>
+<p>主目标为固定验证集上、全部 48 个预测步和所有非零真实流量位置的反归一化平均绝对误差：</p>
+<p><code>objective = masked_MAE(pred × std + mean, true × std + mean)</code></p>
+<p>Optuna 的方向为 <code>minimize</code>。搜索阶段额外记录 train loss、参数量、训练时长和峰值显存作为诊断信息，但不组成加权目标；RMSE/MAPE 只在获得明确授权的最终测试中计算，避免改变项目一直使用 MAE 作为主指标的口径。</p>
+<h2>2. 搜索边界</h2>
+<h3>2.1 可优化参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>搜索范围</th>
+<th>分布/约束</th>
+<th>设计理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lr</code></td>
+<td>0.0002–0.002</td>
+<td>对数均匀</td>
+<td>覆盖当前 1e-3 附近一个数量级</td>
+</tr>
+<tr>
+<td><code>batch</code></td>
+<td>[4, 8]</td>
+<td>categorical</td>
+<td>只允许已知安全的 4/8，不冒险并发或 batch 16</td>
+</tr>
+<tr>
+<td><code>d_model</code></td>
+<td>[24, 32, 48, 64]</td>
+<td>categorical</td>
+<td>同时探索更小与更大表示容量</td>
+</tr>
+<tr>
+<td><code>n_heads</code></td>
+<td>[2, 4, 8]</td>
+<td>categorical</td>
+<td>运行时强制 <code>d_model % n_heads == 0</code></td>
+</tr>
+<tr>
+<td><code>d_ff</code></td>
+<td><code>d_model × [2, 3, 4]</code></td>
+<td>条件派生</td>
+<td>保持 FFN 宽度与隐藏维度成比例</td>
+</tr>
+<tr>
+<td><code>num_layers</code></td>
+<td>[1, 2, 3]</td>
+<td>categorical</td>
+<td>检查 1–3 层的容量/过拟合权衡</td>
+</tr>
+<tr>
+<td><code>dropout</code></td>
+<td>0.05–0.25</td>
+<td>步长 0.05</td>
+<td>调整正则化强度</td>
+</tr>
+<tr>
+<td><code>weight_decay</code></td>
+<td>1e-06–0.0005</td>
+<td>对数均匀</td>
+<td>搜索 AdamW 正则化尺度</td>
+</tr>
+<tr>
+<td><code>embed_dim</code></td>
+<td>[8, 10, 16]</td>
+<td>categorical</td>
+<td>调整 adaptive adjacency 节点嵌入容量</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 明确冻结的项目</h3>
+<p>城市、时序切分、<code>T_in/T_out</code>、真实时间编码、gap filtering、9 维动态输入、33 维静态特征、single spatial graph、gated fusion、linear residual head、Huber loss、AdamW 和指标掩码规则全部冻结。天气、周期滞后、多图、future decoder context 等特征不进入本轮搜索，因为它们会混淆“超参数优化”和“特征/架构消融”。</p>
+<h2>3. 分阶段执行方案</h2>
+<p><img alt="Optuna workflow" src="week7_figures/optimization/optuna_workflow.png"></p>
+<div class="figure-caption">图1　搜索、晋级、多随机种子和最终测试之间的隔离关系。</div>
+
+<h3>阶段 A：配置与资源预检</h3>
+<ul>
+<li>默认命令只解析 YAML、检查冻结字段与搜索空间，不加载数据、不创建 study；</li>
+<li>正式运行必须显式提供 <code>--run</code>；</li>
+<li>CUDA 必须可见，study 启动前至少保留 6144 MiB 空闲显存；</li>
+<li><code>n_jobs=1</code> 被代码强制，禁止多个 trial 同时占用 GPU。</li>
+</ul>
+<h3>阶段 B：Optuna 低预算搜索</h3>
+<ul>
+<li>当前生产参数会作为 incumbent control 主动加入 study，确保搜索结果能在同一代码和预算下直接比较；TPE sampler 的 startup 阶段共 8 个 trials，之后利用历史结果采样；</li>
+<li>每个 trial 最多 30 epochs，patience=6；</li>
+<li>MedianPruner 在至少 5 epochs 后比较中间验证 MAE，且前 5 个 trial 不剪枝；</li>
+<li>所有 trial 固定 seed=42，降低随机噪声对结构比较的影响；</li>
+<li>每轮保存独立 config、<code>history.jsonl</code> 和最佳 checkpoint，Optuna 状态保存到 SQLite；重启后继续剩余总预算，而不是重新获得 30 trials/18 小时；</li>
+<li>中断时处于 RUNNING 的 trial 不原地续训，但会计入总 trial 预算，避免重启突破资源上限；软墙钟预算从 study 首次启动计时并包含停机时间，Optuna 在 trial 之间检查 timeout，正在运行的单个 trial 可能略微越过 18 小时边界；</li>
+<li>study 保存配置、数据和实现文件的 SHA-256 protocol fingerprint；同名数据库若规则漂移将拒绝恢复。</li>
+</ul>
+<h3>阶段 C：全预算晋级</h3>
+<p>排除主动入队的 incumbent 后，按验证 MAE 选择 Top-5 challengers，自动导出带 <code>optimization_validation_only=true</code> 的 YAML，并额外导出 <code>incumbent_control.yaml</code>。这些配置会被通用 <code>scripts/train.py</code> 主动拒绝，只能通过专用 <code>train_optuna_promotion.py --run-promotion</code> 训练；该入口仅构建 train/validation。候选与 control 都用 seed=42、50 epochs、patience=10 在同一环境重训。只有相对同轮 incumbent control 至少改善 0.5% 才晋级多 seed；按历史 checkpoint 估算，对应验证 MAE 约低于 <strong>17.3047</strong>，正式判断以同轮 control 为准。</p>
+<h3>阶段 D：稳健性确认与最终测试</h3>
+<p>晋级配置使用 seeds [7, 21, 42, 123] 复验，报告验证 MAE 的 mean±std。确认收益稳定后，使用独立 <code>evaluate_optuna_final.py --run-final-test</code> 门禁，才会构建与现有模型完全相同的 4,022 个测试窗口并评估 checkpoint；同一 checkpoint 已存在 <code>final_test_metrics.json</code> 时会拒绝重复测试。若验证收益不足 0.5%、跨 seed 方差覆盖收益，或最终测试 MAE 未改善，则保留现有最终模型。</p>
+<h2>4. 资源保护与故障恢复</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>代码措施</th>
+<th>结果处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU OOM</td>
+<td>batch 仅 4/8、参数量上限 2.0M、trial 后清 CUDA cache</td>
+<td>OOM 标记为 pruned，不中断整个 study</td>
+</tr>
+<tr>
+<td>Windows/WSL 重启</td>
+<td>SQLite 状态 + 首次启动时间 + 已消费 trial 计数</td>
+<td>继续剩余 study 总预算；中断 RUNNING trial 计入预算</td>
+</tr>
+<tr>
+<td>配置或数据漂移</td>
+<td>config/data/code SHA-256 protocol fingerprint</td>
+<td>同名 study 指纹不一致时拒绝恢复</td>
+</tr>
+<tr>
+<td>checkpoint 覆盖</td>
+<td><code>trial_XXXX/best.pt</code> 独立路径</td>
+<td>非最佳 trial 仅删除大 checkpoint，保留 config/history/SQLite</td>
+</tr>
+<tr>
+<td>测试泄漏</td>
+<td>objective 只构建 train/validation Dataset</td>
+<td>trial 排名中没有 test 指标</td>
+</tr>
+<tr>
+<td>参数不可用</td>
+<td>配置加载时校验冻结字段、batch 白名单与 head 整除关系</td>
+<td>在占用 GPU 前失败</td>
+</tr>
+<tr>
+<td>主机卡死</td>
+<td>单 trial、2 workers、18h soft timeout</td>
+<td>不启用并行 GPU 搜索；单个在途 trial 允许收尾</td>
+</tr>
+</tbody>
+</table>
+<h2>5. 代码与产物设计</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>configs/week7_optuna_agformer.yaml</code></td>
+<td>搜索空间、预算、剪枝、资源和晋级规则</td>
+</tr>
+<tr>
+<td><code>scripts/optimize_agformer_optuna.py</code></td>
+<td>安全 CLI；无 <code>--run</code> 时只校验</td>
+</tr>
+<tr>
+<td><code>src/optimization/week7.py</code></td>
+<td>数据冻结、Optuna objective、验证 MAE、SQLite study 与配置导出</td>
+</tr>
+<tr>
+<td><code>scripts/train_optuna_promotion.py</code></td>
+<td>Top-5/control 专用 validation-only 全预算训练入口</td>
+</tr>
+<tr>
+<td><code>scripts/evaluate_optuna_final.py</code></td>
+<td>需要 <code>--run-final-test</code> 的独立测试集门禁</td>
+</tr>
+<tr>
+<td><code>tests/test_week7_optimization.py</code></td>
+<td>不训练的安全性与条件搜索测试</td>
+</tr>
+</tbody>
+</table>
+<p>正式搜索完成后，预期产物位于 <code>outputs/week7_optimization/week7_agformer_optuna_v1/</code>：</p>
+<ul>
+<li><code>study.db</code>：带总预算和 protocol fingerprint 的可恢复 Optuna study；</li>
+<li><code>trials.csv</code>：所有 trial 的参数、状态和目标值；</li>
+<li><code>trials/trial_XXXX/config.yaml</code> 与 <code>history.jsonl</code>：逐 trial 留痕；</li>
+<li><code>best_config.yaml</code>：排名第一的 50-epoch 晋级配置；</li>
+<li><code>promotion/configs/rank*_trial*.yaml</code>：Top-5 晋级配置；</li>
+<li><code>promotion/configs/incumbent_control.yaml</code>：与晋级候选同预算复跑的当前生产参数；</li>
+<li><code>summary.json</code>：最佳 trial、验证 MAE、候选列表与“搜索未访问测试集”声明。</li>
+</ul>
+<h2>6. 预定命令（本次未执行训练）</h2>
+<p>仅校验配置：</p>
+<pre><code class="language-bash">.venv/bin/python scripts/optimize_agformer_optuna.py \
+  --config configs/week7_optuna_agformer.yaml
+</code></pre>
+<p>未来获得明确授权后启动搜索：</p>
+<pre><code class="language-bash">.venv/bin/python -u scripts/optimize_agformer_optuna.py \
+  --config configs/week7_optuna_agformer.yaml --run
+</code></pre>
+<p>搜索结束后，晋级配置仍默认只校验；全预算验证训练需要单独授权：</p>
+<pre><code class="language-bash">.venv/bin/python -u scripts/train_optuna_promotion.py \
+  --candidate-config outputs/week7_optimization/week7_agformer_optuna_v1/promotion/configs/rank1_trialXXXX.yaml \
+  --run-promotion
+</code></pre>
+<p>只有完成多 seed 决策后才执行最终测试门禁：</p>
+<pre><code class="language-bash">.venv/bin/python scripts/evaluate_optuna_final.py \
+  --candidate-config outputs/week7_optimization/week7_agformer_optuna_v1/promotion/configs/rank1_trialXXXX.yaml \
+  --run-final-test
+</code></pre>
+<p>代码不在后台自行启动，不包含自动轮询，也不会因生成本报告而创建 study 或 checkpoint。</p>
+<h2>7. 评估边界与决策规则</h2>
+<ol>
+<li>首轮 trial 固定一个随机种子，TPE 最优值存在 selection bias；四 seed 复验是必须步骤；</li>
+<li>30 trials 对 9 组混合参数不是穷举，只是在单机预算下寻找局部更优区域；</li>
+<li>MedianPruner 可能提前淘汰慢热配置，Top-5 全预算阶段用于缓解该问题；</li>
+<li>batch size 会改变梯度噪声，不能只按吞吐量选择；所有候选仍以验证 MAE 排名；</li>
+<li>最终替换模型必须同时满足：数据规则一致、验证改善达到门槛、四 seed 结果稳定、相同测试窗口 MAE 改善；</li>
+<li>本文是<strong>可执行方案</strong>而不是优化结果报告；截至生成时没有运行任何 Optuna trial，因此不报告虚构的 best params 或性能提升。</li>
+</ol></body></html>

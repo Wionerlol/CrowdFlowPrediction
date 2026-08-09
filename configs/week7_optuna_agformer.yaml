@@ -1,0 +1,77 @@
+tag: week7_agformer_optuna_v1
+study_name: week7_agformer_optuna_v1
+objective: 在固定 TaxiBJ 验证集上最小化 AGFormer 48 步平均 MAE
+base_config: configs/agformer_gate_context_linear_seed42.yaml
+output_dir: outputs/week7_optimization/week7_agformer_optuna_v1
+storage: sqlite:///outputs/week7_optimization/week7_agformer_optuna_v1/study.db
+direction: minimize
+
+# Search is deliberately single-process on this workstation. Running multiple
+# GPU trials concurrently is unsupported and risks exhausting CUDA/host memory.
+n_trials: 30
+# Optuna checks timeout between trials; one already-running trial may finish
+# slightly after this soft wall-clock target.
+timeout_hours: 18
+n_jobs: 1
+require_cuda: true
+optimization_seed: 2026
+trial_seed: 42
+enqueue_incumbent_trial: true
+max_epochs: 30
+patience: 6
+num_workers: 2
+keep_only_best_checkpoint: true
+
+sampler:
+  name: tpe
+  n_startup_trials: 8
+  multivariate: true
+
+pruner:
+  name: median
+  n_startup_trials: 5
+  n_warmup_steps: 5
+  interval_steps: 1
+
+resource_guard:
+  allowed_batches: [4, 8]
+  max_parameter_millions: 2.0
+  min_free_cuda_mib_before_study: 6144
+  prune_cuda_oom: true
+  empty_cuda_cache_after_trial: true
+
+# Data rules and feature families are fixed to the Week4 final model. Only
+# optimization parameters below may vary; test data is never evaluated here.
+search_space:
+  lr:
+    low: 0.0002
+    high: 0.002
+    log: true
+  batch:
+    choices: [4, 8]
+  d_model:
+    choices: [24, 32, 48, 64]
+  n_heads:
+    choices: [2, 4, 8]
+  d_ff_multiplier:
+    choices: [2, 3, 4]
+  num_layers:
+    choices: [1, 2, 3]
+  dropout:
+    low: 0.05
+    high: 0.25
+    step: 0.05
+  weight_decay:
+    low: 0.000001
+    high: 0.0005
+    log: true
+  embed_dim:
+    choices: [8, 10, 16]
+
+promotion:
+  top_k: 5
+  full_epochs: 50
+  full_patience: 10
+  confirmation_seeds: [7, 21, 42, 123]
+  minimum_relative_val_improvement: 0.005
+  final_test_policy: 仅对验证集胜出的候选进行一次测试集评估；最终结论使用四随机种子均值和标准差

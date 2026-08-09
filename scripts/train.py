@@ -224,6 +224,12 @@ def main():
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
+    if cfg.get("optimization_validation_only", False):
+        raise ValueError(
+            "This Optuna promotion config is validation-only. Use "
+            "scripts/train_optuna_promotion.py; test evaluation requires the "
+            "separate scripts/evaluate_optuna_final.py --run-final-test gate."
+        )
 
     # CLI 参数覆盖 yaml
     if args.t_in  is not None: cfg["T_in"]  = args.t_in
