@@ -372,7 +372,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/anomaly/detect \
 | `alert_level` | string | 全部 | `general/important/urgent` |
 | `min_alert_level` | integer | 不限制 | `1–3`，按等级下限筛选 |
 | `min_score` | float | 不限制 | `0–1` |
-| 区域参数 | — | 全部 | 事件主质心范围 |
+| 区域参数 | — | 全部 | 事件地图锚点范围；无主质心时使用最高分 `top_cell` |
 | `limit` | integer | 200 | `1–1000` |
 | `offset` | integer | 0 | 分页偏移 |
 
@@ -390,6 +390,12 @@ curl 'http://127.0.0.1:8000/api/v1/alerts?source=realtime&alert_level=urgent'
   "total": 12,
   "offset": 0,
   "limit": 20,
+  "map_alignment": {
+    "aligned": 12,
+    "main_centroid": 10,
+    "top_cell_fallback": 2,
+    "unavailable": 0
+  },
   "events": [
     {
       "event_id": 65,
@@ -405,6 +411,9 @@ curl 'http://127.0.0.1:8000/api/v1/alerts?source=realtime&alert_level=urgent'
       "union_cells": 95,
       "center_lon": 116.2578125,
       "center_lat": 39.8515625,
+      "map_grid_id": 648,
+      "coordinate_source": "main_centroid",
+      "map_alignment_status": "aligned",
       "alert_popup": true,
       "alert_sound": true,
       "alert_message": "紧急预警：大型集会……"
@@ -422,6 +431,9 @@ curl 'http://127.0.0.1:8000/api/v1/alerts?source=realtime&alert_level=urgent'
 | 方法贡献 | `statistical_score`、`reconstruction_score`、`prediction_score`、`dominant_method` |
 | 极值解释 | `max_z`、`max_reconstruction_error`、`max_prediction_residual`、`top_cells` |
 | 预警行为 | `alert_color`、`alert_ui_behavior`、`alert_popup`、`alert_sound`、`alert_action_hint` |
+| 地图对齐 | `map_grid_id`、`map_row/col`、`coordinate_source`、`map_alignment_status` |
+
+`coordinate_source` 为 `main_centroid` 时，地图锚点来自事件主簇中心；为 `top_cell_fallback` 时，事件没有可用主中心，API 使用 `top_cells` 第一项（最高分异常网格）定位。此字段使前端能够显式区分原始中心与补位坐标。
 
 ### 8.3 `GET /api/v1/anomalies/{event_id}`
 

@@ -1,0 +1,1 @@
+The business problem has three stages. Anticipation asks how mobility will change across regions. Detection asks which deviations exceed a normal range. Response requires location, event type and alert severity. A model score is therefore only an intermediate artifact; the final output must be a queryable and explainable event that can trigger an operational action.

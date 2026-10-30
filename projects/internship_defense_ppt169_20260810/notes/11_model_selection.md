@@ -1,0 +1,1 @@
+我原本预期 Spacetimeformer 的通用全局注意力会更强，因此逐步对齐了 local/global attention、value/time embedding、encoder-decoder 与 cross-attention。但 1,024 乘 48 的 token 规模迫使全局注意力近似，且规则网格本身具有强邻域先验，所以它仍未超过 AGFormer。下一页展示最终模型如何利用这一结论。

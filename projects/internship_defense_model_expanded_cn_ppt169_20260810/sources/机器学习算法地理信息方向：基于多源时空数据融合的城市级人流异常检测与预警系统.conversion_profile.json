@@ -1,0 +1,28 @@
+{
+  "schema": "ppt-master.source_to_md.profile.v1",
+  "converter": "pdf_to_md.py",
+  "conversion_type": "pdf",
+  "source": {
+    "path": "/home/louis/projects/DidiRemote/机器学习算法地理信息方向：基于多源时空数据融合的城市级人流异常检测与预警系统.pdf",
+    "name": "机器学习算法地理信息方向：基于多源时空数据融合的城市级人流异常检测与预警系统.pdf",
+    "suffix": ".pdf",
+    "kind": "file",
+    "exists": true,
+    "size_bytes": 194089
+  },
+  "outputs": {
+    "markdown": "机器学习算法地理信息方向：基于多源时空数据融合的城市级人流异常检测与预警系统.md",
+    "asset_dir": "",
+    "image_manifest": "",
+    "image_count": 0
+  },
+  "markdown": {
+    "line_count": 127,
+    "char_count": 12591,
+    "heading_count": 7,
+    "table_count": 5,
+    "image_ref_count": 0,
+    "link_count": 0
+  },
+  "warnings": []
+}

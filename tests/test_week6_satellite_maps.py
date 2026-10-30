@@ -28,6 +28,7 @@ class Week6SatelliteMapTest(unittest.TestCase):
         self.assertTrue(RING_ROADS_GEOJSON.exists())
         with Image.open(SATELLITE_IMAGE) as image:
             self.assertEqual(image.format, "WEBP")
+            self.assertGreaterEqual(image.width, 2_000)
             self.assertEqual(
                 image.size,
                 (metadata["size"]["width"], metadata["size"]["height"]),
@@ -64,12 +65,15 @@ class Week6SatelliteMapTest(unittest.TestCase):
                 "event_type_zh": "突发事件",
                 "start_time": "2016-04-01T08:00:00",
                 "max_score": 0.8,
+                "coordinate_source": "top_cell_fallback",
+                "is_selected": True,
             }
         ]
         html = event_satellite_map_html(events, height=440)
         self.assertIn("BitmapLayer", html)
         self.assertIn("ScatterplotLayer", html)
         self.assertIn("GeoJsonLayer", html)
+        self.assertIn("top_cell_fallback", html)
         self.assertIn("height: 440px", html)
 
     def test_plotly_layer_uses_georeferenced_image_corners(self) -> None:

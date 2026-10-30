@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="74" font-size="48" font-weight="700" fill="#103B5C">41 维节点候选特征：每一维都有空间来源</text><text x="1200" y="64" font-size="16" fill="#526372">10</text><text x="55" y="114" font-size="20" fill="#526372">所有特征按 grid_id 聚合；高偏度计数先 log1p，再做 z-score 或 min-max。</text></g>
+ <g id="dimension_bar" font-family="Microsoft YaHei, Arial, sans-serif">
+  <text x="55" y="165" font-size="22" font-weight="700" fill="#103B5C">维度分解</text>
+  <rect x="55" y="185" width="112" height="58" fill="#103B5C"/><text x="111" y="220" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">地理 4</text>
+  <rect x="167" y="185" width="72" height="58" fill="#2A7F9E"/><text x="203" y="220" text-anchor="middle" font-size="17" fill="#FFFFFF">距离 2</text>
+  <rect x="239" y="185" width="140" height="58" fill="#F26A2E"/><text x="309" y="220" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">路网 5</text>
+  <rect x="379" y="185" width="300" height="58" fill="#103B5C"/><text x="529" y="220" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">POI 密度 11</text>
+  <rect x="679" y="185" width="140" height="58" fill="#2E7D5B"/><text x="749" y="220" text-anchor="middle" font-size="18" fill="#FFFFFF">遥感 5</text>
+  <rect x="819" y="185" width="220" height="58" fill="#C97A11"/><text x="929" y="220" text-anchor="middle" font-size="18" fill="#FFFFFF">历史统计 8</text>
+  <rect x="1039" y="185" width="84" height="58" fill="#2A7F9E"/><text x="1081" y="220" text-anchor="middle" font-size="16" fill="#FFFFFF">站点 3</text>
+  <rect x="1123" y="185" width="58" height="58" fill="#103B5C"/><text x="1152" y="220" text-anchor="middle" font-size="16" fill="#FFFFFF">轨2</text>
+  <rect x="1181" y="185" width="44" height="58" fill="#F26A2E"/><text x="1203" y="220" text-anchor="middle" font-size="16" fill="#FFFFFF">公1</text>
+ </g>
+ <g id="groups" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="55" y="275" width="365" height="245" fill="#FFFFFF" stroke="#C9D5DF"/><text x="80" y="312" font-size="24" font-weight="700" fill="#103B5C">空间位置与可达性 · 11维</text><text x="80" y="350" font-size="18" fill="#526372">地理 4：lat / lon / 中心距离 / 环路</text><text x="80" y="380" font-size="18" fill="#526372">距离 2：最近交通枢纽 / 商圈</text><text x="80" y="410" font-size="18" fill="#526372">路网 5：总路网、高等级、支路、</text><text x="80" y="437" font-size="18" fill="#526372">服务路、步行与骑行道路密度</text><text x="80" y="482" font-size="16" fill="#2A7F9E">OSM 线段裁剪 → UTM 长度 / 网格面积</text>
+  <rect x="445" y="275" width="365" height="245" fill="#FFFFFF" stroke="#C9D5DF"/><text x="470" y="312" font-size="24" font-weight="700" fill="#103B5C">城市功能与土地覆盖 · 16维</text><text x="470" y="350" font-size="18" fill="#526372">POI 11：餐饮、购物、娱乐、办公、</text><text x="470" y="377" font-size="18" fill="#526372">居住、教育、医疗、政务、旅游、</text><text x="470" y="404" font-size="18" fill="#526372">体育、宗教；交通类单独剥离</text><text x="470" y="442" font-size="18" fill="#526372">遥感 5：NDVI / NDBI / MNDWI /</text><text x="470" y="469" font-size="18" fill="#526372">红波段均值与标准差</text><text x="470" y="502" font-size="16" fill="#2E7D5B">Landsat 反射率 → 25m 像素按格聚合</text>
+  <rect x="835" y="275" width="390" height="245" fill="#FFFFFF" stroke="#C9D5DF"/><text x="860" y="312" font-size="24" font-weight="700" fill="#103B5C">流量画像与公共交通 · 14维</text><text x="860" y="350" font-size="18" fill="#526372">历史统计 8：均值、p99、零值率、</text><text x="860" y="377" font-size="18" fill="#526372">早高峰/周末/夜间比、净流向、CV</text><text x="860" y="415" font-size="18" fill="#526372">站点密度 3：地铁站 / 出入口 / 公交站</text><text x="860" y="445" font-size="18" fill="#526372">轨道 2：线路数 / 换乘枢纽</text><text x="860" y="475" font-size="18" fill="#526372">公交 1：网格内唯一线路数</text><text x="860" y="505" font-size="16" fill="#C97A11">历史统计随后因泄漏风险被整体删除</text>
+ </g>
+ <g id="normalization" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="548" width="1170" height="92" fill="#EAF0F5"/><text x="80" y="582" font-size="20" font-weight="700" fill="#103B5C">归一化契约</text><text x="250" y="582" font-size="18" fill="#17212B">坐标/距离 min-max；密度 log1p + z-score；遥感 z-score；线路计数 log1p；枢纽标记保留 0/1。</text><text x="80" y="616" font-size="18" fill="#526372">输出 node_features：(1,024, 41) float32，NaN=0；模型加载时再执行无泄漏列选择。</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="684" font-size="16" fill="#526372">交通类 POI 曾占原 POI 65%，导致相似度图退化；因此从 POI 语义中剥离，改为独立公共交通特征。</text></g>
+</svg>

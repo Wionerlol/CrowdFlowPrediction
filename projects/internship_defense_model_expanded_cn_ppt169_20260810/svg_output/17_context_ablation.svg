@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="76" font-size="52" font-weight="700" fill="#103B5C">门控有效，但更多特征未必更好</text><text x="1165" y="64" font-size="16" fill="#526372">17</text></g>
+ <g id="chart"><rect x="55" y="110" width="730" height="420" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig3_3_feature_ablation.png" x="75" y="130" width="690" height="380" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="findings" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="815" y="110" width="410" height="125" fill="#103B5C"/><text x="840" y="146" font-size="24" font-weight="700" fill="#FFFFFF">为什么门控有效？</text><text x="840" y="176" font-size="17" fill="#EAF0F5">时间、静态信息并非对每个节点、每个时段</text><text x="840" y="200" font-size="17" fill="#EAF0F5">都同样重要。</text><text x="840" y="228" font-size="17" fill="#F26A2E">gate(flow) 让上下文贡献随当前状态变化。</text>
+  <rect x="815" y="250" width="410" height="125" fill="#FFFFFF" stroke="#C9D5DF"/><text x="840" y="286" font-size="24" font-weight="700" fill="#103B5C">为什么完整日历反而变差？</text><text x="840" y="318" font-size="17" fill="#526372">修复调休规则后，原有“提升”不再成立。</text><text x="840" y="347" font-size="17" fill="#C97A11">Calendar MAE 17.8542，</text><text x="840" y="370" font-size="17" fill="#C97A11">弱于 gated 16.5350。</text>
+  <rect x="815" y="390" width="410" height="140" fill="#FFFFFF" stroke="#C9D5DF"/><text x="840" y="426" font-size="24" font-weight="700" fill="#103B5C">为什么天气只带来微小变化？</text><text x="840" y="454" font-size="16" fill="#526372">Calendar + Weather：17.8316，</text><text x="840" y="477" font-size="16" fill="#526372">仅比日历改善 0.0226。</text><text x="840" y="500" font-size="16" fill="#526372">天气效应稀疏且区域异质；</text><text x="840" y="523" font-size="16" fill="#C97A11">未形成可复验的主模型增益。</text>
+ </g>
+ <g id="decision" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="560" width="1170" height="92" fill="#EAF0F5"/><text x="78" y="596" font-size="24" font-weight="700" fill="#103B5C">保留策略</text><text x="230" y="596" font-size="18" fill="#17212B">保留 7 维时间编码与 33 维无泄漏静态特征，但通过门控注入；天气不进入最终主预测器。</text><text x="78" y="628" font-size="18" fill="#526372">方法论：特征工程的价值不仅是“加入”，也包括修正规则、同窗对照和删除无稳定收益的输入。</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="688" font-size="16" fill="#526372">所有结论来自 Week4 同数据规则复验；周期滞后因窗口减少，另做 3,433 窗口对照。</text></g>
+</svg>

@@ -1,6 +1,6 @@
 # Week6 FastAPI + Streamlit 交互式人流监测平台
 
-更新时间：2026-08-09
+更新时间：2026-08-10
 
 ## 实现范围
 
@@ -27,11 +27,13 @@
 
 需要注意：底图拍摄于 2015-04-16，是用于提供真实城市空间语境的静态遥感影像，并不是实时卫星画面；“实时”仅指页面上动态刷新的人流和异常检测数据。
 
-提交到项目中的 WebP 是 1,280 像素宽的轻量派生图。若需要从原始 GeoTIFF 重新生成：
+页面采用地图优先布局，默认地图高度为 800 px，可在 620–1,040 px 之间调整。提交到项目中的 WebP 是 2,048 像素宽的高清派生图。若需要从原始 GeoTIFF 重新生成同规格资源：
 
 ```bash
-.venv/bin/python scripts/build_week6_satellite_basemap.py
+.venv/bin/python scripts/build_week6_satellite_basemap.py --width 2048 --quality 92
 ```
+
+异常事件优先使用 `main_centroid_row/col` 定位。空间上较分散、没有单一主簇中心的事件，使用其 `top_cells` 中最高分网格作为只读地图锚点，并通过 `coordinate_source=top_cell_fallback` 明确标注。该补位不改变事件范围、分类或分数；页面同时显示主中心、补位和不可定位事件数，防止事件在地图上静默丢失。
 
 若需要从原始网格和 OSM PBF 重新生成展示网格与环路参照层：
 

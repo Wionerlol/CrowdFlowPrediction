@@ -41,19 +41,29 @@ from src.visualization.satellite_maps import (
 )
 
 
-st.set_page_config(page_title="城市人流监测与异常预警", page_icon="🌆", layout="wide")
+st.set_page_config(
+    page_title="城市人流监测与异常预警",
+    page_icon="🌆",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 st.markdown(
     """
     <style>
-      .block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
-      .hero {padding: 1.0rem 1.2rem; border-radius: 14px; background: linear-gradient(120deg,#102a43,#1f5f8b); color:#fff; margin-bottom:1rem;}
-      .hero h1 {margin:0; font-size:2rem;}
-      .hero p {margin:.35rem 0 0; opacity:.85;}
+      .block-container {max-width:100%; padding: .45rem .8rem 1.5rem;}
+      .hero {padding:.7rem 1rem;border-radius:12px;background:linear-gradient(115deg,#0b1f3a,#174f78);color:#fff;margin-bottom:.45rem;box-shadow:0 5px 18px rgba(15,42,67,.16);}
+      .hero h1 {margin:0;font-size:1.55rem;line-height:1.25;}
+      .hero p {margin:.18rem 0 0;opacity:.82;font-size:.88rem;}
       .alert-important {background:#fff4e5;border-left:6px solid #f97316;padding:.8rem 1rem;border-radius:8px;margin:.4rem 0;}
       .alert-urgent {background:#fee2e2;border-left:6px solid #dc2626;padding:.8rem 1rem;border-radius:8px;margin:.4rem 0;animation:pulse 1.3s infinite;}
       @keyframes pulse {0%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}70%{box-shadow:0 0 0 12px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
-      div[data-testid="stMetric"] {background:#f7fafc;border:1px solid #dbe4ee;padding:.6rem;border-radius:10px;}
+      div[data-testid="stMetric"] {background:#f7fafc;border:1px solid #dbe4ee;padding:.45rem .6rem;border-radius:10px;}
+      div[data-testid="stIFrame"] {border:1px solid #cbd5e1;border-radius:14px;overflow:hidden;box-shadow:0 7px 24px rgba(15,23,42,.14);}
+      div[data-testid="stPlotlyChart"] {border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;}
+      .map-note {font-size:.82rem;color:#52677c;margin:.15rem 0 .35rem;}
+      .align-ok {color:#166534;font-weight:650;}
+      .align-warn {color:#9a3412;font-weight:650;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -147,10 +157,13 @@ def render_event_map(
     row_offset: int,
     col_offset: int,
     show_ring_roads: bool,
+    selected_event_id: int | None = None,
 ) -> None:
     display_events = adjust_display_records(
         events, row_offset=row_offset, col_offset=col_offset
     )
+    for event in display_events:
+        event["is_selected"] = int(event.get("event_id", -1)) == selected_event_id
     if basemap_mode == "satellite":
         html = event_satellite_map_html(
             display_events,
@@ -309,14 +322,35 @@ def anomaly_tab(
         st.error(str(exc))
         return
     events = result["events"]
-    st.metric("匹配事件数", result["total"])
+    alignment = result.get("map_alignment", {})
+    overview = st.columns(4)
+    overview[0].metric("匹配事件", result["total"])
+    overview[1].metric("地图已对齐", alignment.get("aligned", 0))
+    overview[2].metric("原始中心点", alignment.get("main_centroid", 0))
+    overview[3].metric("Top-cell 补位", alignment.get("top_cell_fallback", 0))
     if not events:
         st.info("当前筛选条件下没有异常事件。")
         return
 
-    table = pd.DataFrame(events)
-    display_columns = ["event_id", "start_time", "end_time", "event_type_zh", "alert_level_zh", "max_score", "duration_hours", "union_cells"]
-    st.dataframe(table[[column for column in display_columns if column in table]], width="stretch", hide_index=True)
+    labels = {
+        int(item["event_id"]): f"#{int(item['event_id'])} · {item.get('alert_level_zh', '')} · {item.get('event_type_zh', item.get('event_type'))} · {str(item.get('start_time', '')).replace('T', ' ')}"
+        for item in events
+    }
+    event_id = st.selectbox("地图焦点 / 查看事件", list(labels), format_func=labels.get)
+    missing = int(alignment.get("unavailable", 0))
+    fallback = int(alignment.get("top_cell_fallback", 0))
+    if missing:
+        st.markdown(
+            f'<div class="map-note align-warn">有 {missing} 个事件缺少可解析坐标，暂时无法落图；'
+            f'{fallback} 个无中心点事件已用最高分异常网格补位。</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<div class="map-note align-ok">全部 {alignment.get("aligned", len(events))} 个事件均已对齐；'
+            f'其中 {fallback} 个无主中心点事件使用最高分异常网格作为可解释锚点。</div>',
+            unsafe_allow_html=True,
+        )
     render_event_map(
         events,
         height=map_height,
@@ -325,30 +359,50 @@ def anomaly_tab(
         row_offset=row_offset,
         col_offset=col_offset,
         show_ring_roads=show_ring_roads,
+        selected_event_id=event_id,
     )
     if basemap_mode == "satellite":
         st.caption(satellite_caption(row_offset=row_offset, col_offset=col_offset))
 
-    labels = {
-        int(item["event_id"]): f"#{int(item['event_id'])} · {item.get('alert_level_zh', '')} · {item.get('event_type_zh', item.get('event_type'))} · {str(item.get('start_time', '')).replace('T', ' ')}"
-        for item in events
-    }
-    event_id = st.selectbox("查看事件详情", list(labels), format_func=labels.get)
     try:
         detail = client.anomaly_detail(event_id, source=source)
     except ApiError as exc:
         st.error(str(exc))
         return
-    st.markdown(f"### {detail.get('alert_level_zh', '')}预警 · {detail.get('event_type_zh', detail.get('event_type', ''))}")
-    st.info(detail.get("alert_message", ""))
-    metrics = st.columns(6)
-    metrics[0].metric("持续时间", f"{float(detail.get('duration_hours', 0)):.1f}h")
-    metrics[1].metric("最高分数", f"{float(detail.get('max_score', 0)):.3f}")
-    metrics[2].metric("影响网格", int(detail.get("union_cells", 0)))
-    metrics[3].metric("最大 Z", f"{float(detail.get('max_z', 0)):.2f}")
-    metrics[4].metric("主导方法", detail.get("dominant_method", "—"))
-    metrics[5].metric("空间簇数", int(detail.get("cluster_count", 0)))
-    with st.expander("方法贡献与处置建议", expanded=True):
+    table = pd.DataFrame(events)
+    display_columns = ["event_id", "start_time", "end_time", "event_type_zh", "alert_level_zh", "max_score", "duration_hours", "union_cells", "coordinate_source"]
+    list_column, detail_column = st.columns([1.1, 1], gap="large")
+    with list_column:
+        st.markdown("#### 筛选结果")
+        st.dataframe(
+            table[[column for column in display_columns if column in table]],
+            width="stretch",
+            height=430,
+            hide_index=True,
+            column_config={
+                "coordinate_source": st.column_config.TextColumn("地图坐标来源"),
+                "max_score": st.column_config.NumberColumn("最高分数", format="%.3f"),
+            },
+        )
+    with detail_column:
+        st.markdown(f"#### {detail.get('alert_level_zh', '')}预警 · {detail.get('event_type_zh', detail.get('event_type', ''))}")
+        st.info(detail.get("alert_message", ""))
+        metrics = st.columns(3)
+        metrics[0].metric("持续时间", f"{float(detail.get('duration_hours', 0)):.1f}h")
+        metrics[1].metric("最高分数", f"{float(detail.get('max_score', 0)):.3f}")
+        metrics[2].metric("影响网格", int(detail.get("union_cells", 0)))
+        metrics = st.columns(3)
+        metrics[0].metric("最大 Z", f"{float(detail.get('max_z', 0)):.2f}")
+        metrics[1].metric("主导方法", detail.get("dominant_method", "—"))
+        metrics[2].metric("空间簇数", int(detail.get("cluster_count", 0)))
+        coordinate_source = detail.get("coordinate_source", "unavailable")
+        source_label = {
+            "main_centroid": "事件主簇中心",
+            "top_cell_fallback": "最高分异常网格（补位）",
+            "unavailable": "不可定位",
+        }.get(coordinate_source, coordinate_source)
+        st.caption(f"地图锚点：{source_label} · grid #{detail.get('map_grid_id', '—')}")
+    with st.expander("所选事件的方法贡献与处置建议", expanded=True):
         contribution = pd.DataFrame(
             {
                 "method": ["Statistical", "Reconstruction", "Prediction"],
@@ -395,7 +449,7 @@ def main() -> None:
         api_url = st.text_input("FastAPI 地址", value="http://127.0.0.1:8000/api/v1")
         refresh_seconds = st.slider("实时刷新间隔（秒）", 5, 120, 30, 5)
         sound_enabled = st.toggle("紧急预警声音", value=True)
-        map_height = st.slider("地图高度", 420, 760, 570, 10)
+        map_height = st.slider("地图高度", 620, 1040, 800, 20)
         basemap_mode = st.selectbox(
             "地图背景",
             ["satellite", "kepler"],

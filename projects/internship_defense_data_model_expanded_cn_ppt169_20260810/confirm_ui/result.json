@@ -1,0 +1,52 @@
+{
+  "canvas": "ppt169",
+  "page_count": "22",
+  "audience": "学校实习答辩老师；需要在有限时间内判断工作量、技术深度、结果可信度和工程完成度",
+  "content_divergence": "采用五个月成长叙事重新组织内容；岗位背景为网约车安全方向算法实习生，数据表述为匿名化城市网格流量与公开基准原型验证，不将公开数据描述为公司内部数据",
+  "mode": "narrative",
+  "visual_style": "data-journalism",
+  "color": {
+    "name": "城市安全蓝橙",
+    "palette": {
+      "background": "#F7FAFC",
+      "secondary_bg": "#EAF0F5",
+      "primary": "#103B5C",
+      "accent": "#F26A2E",
+      "secondary_accent": "#2A7F9E",
+      "body_text": "#17212B"
+    }
+  },
+  "icons": "tabler-outline",
+  "typography": {
+    "name": "微软雅黑 + Arial",
+    "heading": {
+      "cjk": "Microsoft YaHei",
+      "latin": "Arial",
+      "css": "'Microsoft YaHei','Arial',sans-serif"
+    },
+    "body": {
+      "cjk": "Microsoft YaHei",
+      "latin": "Arial",
+      "css": "'Microsoft YaHei','Arial',sans-serif"
+    },
+    "body_size": 32,
+    "body_size_unit": "px",
+    "sizes": {
+      "title": 56,
+      "subtitle": 34,
+      "annotation": 18
+    }
+  },
+  "delivery_purpose": "presentation",
+  "formula_policy": "text-only",
+  "image_usage": [
+    "provided",
+    "placeholder"
+  ],
+  "image_notes": "优先使用项目已有真实图表、北京卫星底图与系统截图；仅为 Web 操作短视频和最新系统首页/三级预警弹窗截图保留占位，不放公司部门标识或实习现场照片。",
+  "generation_mode": "continuous",
+  "refine_spec": false,
+  "stage": "final",
+  "status": "confirmed",
+  "confirmed_at": "2026-08-10T16:00:00+08:00"
+}

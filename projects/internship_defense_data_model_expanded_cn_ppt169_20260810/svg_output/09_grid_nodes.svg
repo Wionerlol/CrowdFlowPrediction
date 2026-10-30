@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="76" font-size="50" font-weight="700" fill="#103B5C">网格如何变成图节点：编号、方向与特征绑定</text><text x="1200" y="64" font-size="16" fill="#526372">09</text><text x="55" y="118" font-size="22" fill="#526372">模型中的 node 不是抽象编号，而是一个固定网格单元的流量序列、静态语义和邻接关系。</text></g>
+ <g id="grid" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="55" y="155" width="500" height="430" fill="#FFFFFF" stroke="#C9D5DF"/>
+  <text x="80" y="195" font-size="24" font-weight="700" fill="#103B5C">32 × 32 网格 → 1,024 nodes</text>
+  <g stroke="#DDE5EC" stroke-width="1" fill="none">
+   <path d="M105 235H505M105 285H505M105 335H505M105 385H505M105 435H505M105 485H505M105 535H505"/>
+   <path d="M105 235V535M155 235V535M205 235V535M255 235V535M305 235V535M355 235V535M405 235V535M455 235V535M505 235V535"/>
+  </g>
+  <rect x="255" y="335" width="50" height="50" fill="#F26A2E"/><text x="280" y="367" text-anchor="middle" font-size="17" font-weight="700" fill="#FFFFFF">node</text>
+  <path d="M80 235L80 535" stroke="#2A7F9E" stroke-width="3"/><path d="M72 255L80 235L88 255" fill="none" stroke="#2A7F9E" stroke-width="3"/><text x="65" y="390" transform="rotate(-90 65 390)" font-size="16" fill="#526372">row：北 → 南</text>
+  <path d="M105 560L505 560" stroke="#2A7F9E" stroke-width="3"/><path d="M485 552L505 560L485 568" fill="none" stroke="#2A7F9E" stroke-width="3"/><text x="305" y="583" text-anchor="middle" font-size="16" fill="#526372">col：西 → 东</text>
+ </g>
+ <g id="mapping" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="600" y="155" width="625" height="120" fill="#103B5C"/><text x="630" y="198" font-size="22" fill="#EAF0F5">稳定编号规则</text><text x="630" y="245" font-size="34" font-family="Consolas, Courier New, monospace" fill="#FFFFFF">node_id = row × 32 + col</text>
+  <rect x="600" y="300" width="295" height="185" fill="#FFFFFF" stroke="#C9D5DF"/><text x="625" y="338" font-size="24" font-weight="700" fill="#103B5C">节点动态值</text><text x="625" y="375" font-size="18" fill="#526372">每 30 分钟：</text><text x="625" y="405" font-size="20" fill="#17212B">inflow, outflow</text><text x="625" y="445" font-size="18" fill="#526372">形状：(T, N, 2)</text>
+  <rect x="930" y="300" width="295" height="185" fill="#FFFFFF" stroke="#C9D5DF"/><text x="955" y="338" font-size="24" font-weight="700" fill="#103B5C">节点静态值</text><text x="955" y="375" font-size="18" fill="#526372">同一 grid_id 聚合：</text><text x="955" y="405" font-size="20" fill="#17212B">路网、POI、交通、遥感</text><text x="955" y="445" font-size="18" fill="#526372">形状：(N, F_static)</text>
+  <rect x="600" y="510" width="625" height="75" fill="#EAF0F5"/><text x="625" y="541" font-size="18" font-weight="700" fill="#103B5C">空间尺度：</text><text x="740" y="541" font-size="18" fill="#17212B">单格约 1.33 × 1.73 km，平均约 2.32 km²。</text><text x="625" y="570" font-size="16" fill="#526372">中心经纬度与边界存入 grid_meta；图卷积使用 node_id 拓扑。</text>
+ </g>
+ <g id="caveat" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="615" width="1170" height="58" fill="#EAF0F5"/><text x="80" y="651" font-size="18" fill="#C97A11">坐标边界：</text><text x="185" y="651" font-size="17" fill="#17212B">Web 展示校准只移动可视化坐标；node_id 与图拓扑不变，但地理语义精度仍取决于 grid_meta，不能靠重新编号消除。</text></g>
+</svg>

@@ -1,0 +1,28 @@
+{
+  "schema": "ppt-master.source_to_md.profile.v1",
+  "converter": "pdf_to_md.py",
+  "conversion_type": "pdf",
+  "source": {
+    "path": "/home/louis/projects/DidiRemote/outputs/reports/week2_report.pdf",
+    "name": "week2_report.pdf",
+    "suffix": ".pdf",
+    "kind": "file",
+    "exists": true,
+    "size_bytes": 215129
+  },
+  "outputs": {
+    "markdown": "week2_report.md",
+    "asset_dir": "week2_report_files",
+    "image_manifest": "week2_report_files/image_manifest.json",
+    "image_count": 1
+  },
+  "markdown": {
+    "line_count": 510,
+    "char_count": 14841,
+    "heading_count": 5,
+    "table_count": 68,
+    "image_ref_count": 1,
+    "link_count": 0
+  },
+  "warnings": []
+}

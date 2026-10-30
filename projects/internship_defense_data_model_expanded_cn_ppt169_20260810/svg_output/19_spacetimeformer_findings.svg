@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="76" font-size="52" font-weight="700" fill="#103B5C">为什么更大、更接近原版，仍没有超过 AGFormer？</text><text x="1165" y="64" font-size="16" fill="#526372">19</text></g>
+ <g id="chart"><rect x="55" y="110" width="730" height="430" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig3_2_spacetimeformer_ablation.png" x="75" y="130" width="690" height="390" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="reasons" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="815" y="110" width="410" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="840" y="142" font-size="22" font-weight="700" fill="#103B5C">1 · 容量不是瓶颈</text><text x="840" y="174" font-size="18" fill="#526372">0.030M → 0.082M 后，MAE 17.9967 → 18.6715</text><text x="840" y="197" font-size="16" fill="#C97A11">参数变大反而泛化更差</text>
+  <rect x="815" y="220" width="410" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="840" y="252" font-size="22" font-weight="700" fill="#103B5C">2 · 全局注意力被迫近似</text><text x="840" y="284" font-size="18" fill="#526372">49,152 个上下文 token 无法直接做平方复杂度</text><text x="840" y="307" font-size="16" fill="#C97A11">计算近似增加优化难度</text>
+  <rect x="815" y="330" width="410" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="840" y="362" font-size="22" font-weight="700" fill="#103B5C">3 · future time 可能是噪声</text><text x="840" y="394" font-size="18" fill="#526372">关闭后 MAE 18.4433 → 18.2950</text><text x="840" y="417" font-size="16" fill="#2E7D5B">RMSE 同时 34.4038 → 33.4965</text>
+  <rect x="815" y="440" width="410" height="100" fill="#103B5C"/><text x="840" y="472" font-size="22" font-weight="700" fill="#FFFFFF">4 · 显式图先验更匹配任务</text><text x="840" y="504" font-size="18" fill="#EAF0F5">规则网格邻接稳定，而纯 token 注意力需重新学习</text><text x="840" y="527" font-size="16" fill="#F26A2E">最佳 STF + linear 仍为 17.0688</text>
+ </g>
+ <g id="lesson" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="570" width="1170" height="82" fill="#EAF0F5"/><text x="78" y="604" font-size="24" font-weight="700" fill="#103B5C">真正可迁移的发现：linear output 有效</text><text x="500" y="604" font-size="18" fill="#526372">Spacetimeformer 关闭 future time 后加线性输出，MAE 从 18.2950 降到 17.0688；下一步把该机制迁移给 AGFormer。</text><text x="78" y="635" font-size="16" fill="#526372">说明：Gated 版本 MAPE 35.33 更好，但 MAE/RMSE 变差，不适合作为 Week5 绝对残差主预测器。</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="688" font-size="16" fill="#526372">结论：失败实验没有被丢弃，它定位了“归纳偏置”问题，并产出可迁移的线性残差模块。</text></g>
+</svg>

@@ -1,0 +1,1 @@
+为了公平判断 Spacetimeformer，我没有停在早期简化版，而是分五步对齐。第一步修复真实时间、静态节点和 gap-aware 窗口；第二步把 d_model、head 和层数匹配到 AGFormer；第三步改为 temporal local attention 加 linear global attention；第四步加入 value/time 分离、given 或 missing、context 和 target embedding；第五步补齐 encoder-decoder 与 local/global cross-attention。完整对齐模型约 0.089M 参数，但上下文仍有 49,152 个 token，因此必须使用注意力近似。

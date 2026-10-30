@@ -103,8 +103,9 @@ class Week6ApiTest(unittest.TestCase):
                     "duration_hours": 0.5,
                     "union_cells": 2,
                     "cluster_count": 1,
-                    "main_centroid_row": 0.0,
-                    "main_centroid_col": 0.0,
+                    "main_centroid_row": np.nan,
+                    "main_centroid_col": np.nan,
+                    "top_cells": "r0|c0|score=0.650|flow=10.0|z=3.2",
                     "center_lon": 0.0,
                     "center_lat": 0.0,
                     "statistical_score": 0.8,
@@ -209,6 +210,31 @@ class Week6ApiTest(unittest.TestCase):
         self.assertEqual(filtered.status_code, 200)
         self.assertEqual(filtered.json()["total"], 1)
         self.assertEqual(filtered.json()["events"][0]["center_lon"], 116.2)
+        self.assertEqual(filtered.json()["events"][0]["coordinate_source"], "main_centroid")
+
+        all_events = self.client.get("/api/v1/anomalies")
+        self.assertEqual(all_events.status_code, 200)
+        body = all_events.json()
+        self.assertEqual(
+            body["map_alignment"],
+            {
+                "aligned": 2,
+                "main_centroid": 1,
+                "top_cell_fallback": 1,
+                "unavailable": 0,
+            },
+        )
+        fallback = next(item for item in body["events"] if item["event_id"] == 2)
+        self.assertEqual(fallback["center_lon"], 116.1)
+        self.assertEqual(fallback["center_lat"], 39.9)
+        self.assertEqual(fallback["map_grid_id"], 0)
+        self.assertEqual(fallback["coordinate_source"], "top_cell_fallback")
+        self.assertEqual(fallback["map_alignment_status"], "aligned")
+
+        regional = self.client.get("/api/v1/anomalies", params={"grid_ids": "0"})
+        self.assertEqual(regional.status_code, 200)
+        self.assertEqual(regional.json()["total"], 1)
+        self.assertEqual(regional.json()["events"][0]["event_id"], 2)
 
         detail = self.client.get("/api/v1/anomalies/1")
         self.assertEqual(detail.status_code, 200)

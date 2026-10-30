@@ -1,0 +1,1 @@
+This was not only a forecasting-model exercise. I completed a full chain from data to service: 1,024 spatial nodes, a 24-hour forecasting horizon, three anomaly evidence branches, and a FastAPI plus map-based Web system with three alert levels. The next slide translates that technical chain into three connected safety decisions.

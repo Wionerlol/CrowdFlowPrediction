@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="56" font-weight="700" fill="#103B5C">从 ARIMA、LSTM 到图时空模型</text><text x="1165" y="64" font-size="16" fill="#526372">10</text></g>
+ <g id="chart"><rect x="55" y="118" width="1170" height="365" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig3_1_baseline_multiseed.png" x="75" y="138" width="1130" height="325" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="findings" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g><line x1="55" y1="530" x2="55" y2="640" stroke="#2A7F9E" stroke-width="7"/><text x="78" y="560" font-size="34" font-weight="700" fill="#103B5C">长输入有效</text><text x="78" y="603" font-size="18" fill="#526372"><tspan x="78">48 步历史明显改善 RNN，</tspan><tspan x="78" dy="30">但缺少显式空间传播。</tspan></text></g>
+  <g><line x1="430" y1="530" x2="430" y2="640" stroke="#F26A2E" stroke-width="7"/><text x="453" y="560" font-size="34" font-weight="700" fill="#103B5C">LSTM：19.4941</text><text x="453" y="603" font-size="18" fill="#526372"><tspan x="453">gap-aware 三 seed</tspan><tspan x="453" dy="30">± 0.1373 MAE</tspan></text></g>
+  <g><line x1="815" y1="530" x2="815" y2="640" stroke="#2E7D5B" stroke-width="7"/><text x="838" y="560" font-size="34" font-weight="700" fill="#103B5C">AGFormer：16.9376</text><text x="838" y="603" font-size="18" fill="#526372"><tspan x="838">Time + Static 三 seed</tspan><tspan x="838" dy="30">长时依赖 + 图空间先验</tspan></text></g>
+ </g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="684" font-size="16" fill="#526372">结论：后续主线锁定 Transformer 时间建模与显式/自适应图空间建模。</text></g>
+</svg>

@@ -1,0 +1,1 @@
+Good morning. My project is an urban crowd forecasting and anomaly alert system built during a ride-hailing safety algorithm internship. The objective was to convert city-grid movement signals into forecasts, anomaly events and actionable alerts. I will start with the complete outcome, then move through the five-month development path.

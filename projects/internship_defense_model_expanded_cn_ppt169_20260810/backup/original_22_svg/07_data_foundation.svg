@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="image"><image href="../images/beijing_landsat.webp" x="880" y="0" width="400" height="720" preserveAspectRatio="xMidYMid slice"/><rect x="880" y="0" width="400" height="720" fill="#103B5C" fill-opacity="0.20"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="84" font-size="56" font-weight="700" fill="#103B5C">数据底座：动态流量 + 城市静态语义 + 外生上下文</text><text x="1170" y="65" font-size="16" fill="#FFFFFF">07</text></g>
+ <g id="core" font-family="Microsoft YaHei, Arial, sans-serif"><text x="58" y="170" font-size="64" font-weight="700" fill="#F26A2E">1,024</text><text x="275" y="164" font-size="36" fill="#17212B">个匿名化城市网格</text><text x="58" y="215" font-size="18" fill="#526372">统一网格与半小时时钟，承载动态、静态与外生信息。</text></g>
+ <g id="sources" font-family="Microsoft YaHei, Arial, sans-serif">
+  <line x1="190" y1="385" x2="675" y2="385" stroke="#C9D5DF" stroke-width="3"/>
+  <g><circle cx="190" cy="385" r="55" fill="#103B5C"/><use data-icon="tabler-outline/chart-line" x="163" y="358" width="54" height="54" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="105" y="480" font-size="32" fill="#17212B">动态流量</text><text x="90" y="515" font-size="18" fill="#526372">网格流入 / 流出</text></g>
+  <g><circle cx="430" cy="385" r="55" fill="#2A7F9E"/><use data-icon="tabler-outline/map" x="403" y="358" width="54" height="54" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="345" y="480" font-size="32" fill="#17212B">静态空间</text><text x="320" y="515" font-size="18" fill="#526372">路网 · POI · 交通 · 遥感</text></g>
+  <g><circle cx="675" cy="385" r="55" fill="#F26A2E"/><use data-icon="tabler-outline/cloud" x="648" y="358" width="54" height="54" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="585" y="480" font-size="32" fill="#17212B">外生上下文</text><text x="580" y="515" font-size="18" fill="#526372">天气 · 工作日 · 节假日</text></g>
+ </g>
+ <g id="boundary" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="590" width="780" height="72" fill="#EAF0F5"/><text x="78" y="620" font-size="18" font-weight="700" fill="#103B5C">数据边界</text><text x="78" y="650" font-size="18" fill="#526372">原型验证使用公开基准数据；方案面向经授权的合规内部环境迁移。</text></g>
+</svg>

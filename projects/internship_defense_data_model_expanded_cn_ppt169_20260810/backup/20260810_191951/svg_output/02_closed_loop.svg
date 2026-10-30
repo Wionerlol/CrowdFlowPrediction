@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/><rect x="0" y="0" width="20" height="720" fill="#F26A2E"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="62" y="86" font-size="56" font-weight="700" fill="#103B5C">从数据到预警：完整闭环，而非单点模型</text><text x="1120" y="70" font-size="16" fill="#526372">01 / OVERVIEW　02</text></g>
+ <g id="message" font-family="Microsoft YaHei, Arial, sans-serif"><text x="64" y="155" font-size="36" fill="#17212B">项目最终交付了可复现的数据、预测、检测、服务与评估链路。</text></g>
+ <g id="trace"><path d="M105 410 C255 330 350 500 505 410 S760 320 900 410 S1090 500 1200 386" fill="none" stroke="#2A7F9E" stroke-width="4"/><path d="M900 410 C1030 476 1100 455 1200 386" fill="none" stroke="#F26A2E" stroke-width="7"/></g>
+ <g id="milestones" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g id="m1"><circle cx="132" cy="397" r="38" fill="#103B5C"/><use data-icon="tabler-outline/database" x="108" y="373" width="48" height="48" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="78" y="510" font-size="64" font-weight="700" fill="#103B5C">1,024</text><text x="80" y="553" font-size="18" fill="#526372">城市空间节点</text></g>
+  <g id="m2"><circle cx="470" cy="425" r="38" fill="#2A7F9E"/><use data-icon="tabler-outline/chart-line" x="446" y="401" width="48" height="48" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="410" y="298" font-size="64" font-weight="700" fill="#2A7F9E">24h</text><text x="410" y="335" font-size="18" fill="#526372">48 个半小时预测步</text></g>
+  <g id="m3"><circle cx="835" cy="389" r="38" fill="#103B5C"/><use data-icon="tabler-outline/brain" x="811" y="365" width="48" height="48" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="760" y="510" font-size="64" font-weight="700" fill="#103B5C">3 路</text><text x="760" y="553" font-size="18" fill="#526372">异常证据加权融合</text></g>
+  <g id="m4"><circle cx="1172" cy="400" r="42" fill="#F26A2E"/><use data-icon="tabler-outline/shield-check" x="1146" y="374" width="52" height="52" stroke="#FFFFFF" stroke-width="2" fill="none"/><text x="1040" y="300" font-size="64" font-weight="700" fill="#F26A2E">3 级</text><text x="1035" y="338" font-size="18" fill="#526372">API · Web · 分级预警</text></g>
+ </g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><line x1="64" y1="660" x2="1216" y2="660" stroke="#C9D5DF"/><text x="64" y="690" font-size="16" fill="#526372">城市级人流预测、异常检测与分级预警系统</text></g>
+</svg>

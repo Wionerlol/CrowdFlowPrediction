@@ -1,0 +1,1 @@
+这一页列出主要技术来源。图学习部分参考 GCN、STGCN 与 Graph WaveNet；长时依赖部分参考 Transformer 与 Spacetimeformer；异常和解释部分参考 VAE、Anomaly Transformer、SHAP 与 Optuna。项目价值在于把这些经典方法放到统一规则下做工程组合与实证选择。最后一页回到五个月实习的核心收获。

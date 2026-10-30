@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="56" font-weight="700" fill="#103B5C">严格消融：哪些特征和结构真正有用？</text><text x="1165" y="64" font-size="16" fill="#526372">13</text></g>
+ <g id="chart"><rect x="55" y="110" width="1170" height="365" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig3_3_feature_ablation.png" x="75" y="130" width="1130" height="325" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="findings" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g><circle cx="85" cy="535" r="24" fill="#2A7F9E"/><text x="85" y="543" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">1</text><text x="125" y="528" font-size="18" font-weight="700" fill="#17212B">2×2 门控消融</text><text x="125" y="558" font-size="18" fill="#526372">拆分 flow / time / static</text></g>
+  <g><circle cx="385" cy="535" r="24" fill="#F26A2E"/><text x="385" y="543" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">2</text><text x="425" y="528" font-size="18" font-weight="700" fill="#17212B">日历修复重跑</text><text x="425" y="558" font-size="18" fill="#526372">排除错误编码的虚假提升</text></g>
+  <g><circle cx="690" cy="535" r="24" fill="#103B5C"/><text x="690" y="543" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">3</text><text x="730" y="528" font-size="18" font-weight="700" fill="#17212B">同窗口对照</text><text x="730" y="558" font-size="18" fill="#526372">周期滞后：3,433 个窗口</text></g>
+  <g><circle cx="995" cy="535" r="24" fill="#C97A11"/><text x="995" y="543" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">4</text><text x="1035" y="528" font-size="18" font-weight="700" fill="#17212B">记录负结果</text><text x="1035" y="558" font-size="18" fill="#526372">天气 / 多图未形成增益</text></g>
+ </g>
+ <g id="conclusion" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="610" width="1170" height="64" fill="#103B5C"/><text x="640" y="650" text-anchor="middle" font-size="18" fill="#FFFFFF">有效：门控上下文 + 线性残差　｜　未证实：天气、周期滞后、简单多图权重</text></g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="82" font-size="56" font-weight="700" fill="#103B5C">特征与图结构：先充分构建，再严格消融</text><text x="1160" y="65" font-size="16" fill="#526372">09</text><text x="55" y="132" font-size="36" fill="#17212B">多源不等于全部硬塞进模型，最终输入由审计与消融共同决定。</text></g>
+ <g id="funnel" font-family="Microsoft YaHei, Arial, sans-serif"><text x="60" y="215" font-size="34" font-weight="700" fill="#103B5C">静态特征审计</text><path d="M75 255H500L430 390H145Z" fill="#EAF0F5" stroke="#C9D5DF"/><text x="288" y="310" text-anchor="middle" font-size="64" font-weight="700" fill="#2A7F9E">41</text><text x="288" y="347" text-anchor="middle" font-size="18" fill="#526372">候选维度</text><path d="M145 410H430L380 520H195Z" fill="#103B5C"/><text x="288" y="475" text-anchor="middle" font-size="64" font-weight="700" fill="#FFFFFF">33</text><text x="288" y="510" text-anchor="middle" font-size="18" fill="#EAF0F5">无泄漏静态特征</text><text x="70" y="595" font-size="18" fill="#526372">最终还包括 7 维时间/日历 + 2 维流量。</text></g>
+ <g id="graphs" font-family="Microsoft YaHei, Arial, sans-serif"><text x="590" y="215" font-size="34" font-weight="700" fill="#103B5C">四类候选图</text>
+  <g><rect x="590" y="250" width="265" height="100" fill="#FFFFFF" stroke="#F26A2E" stroke-width="3"/><!-- icon: tabler-outline/graph -->
+  <g transform="translate(610, 275) scale(1.83333)" fill="none" stroke="#F26A2E" stroke-width="2">
+    <path d="M4 18v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2" />
+    <path d="M7 14l3 -3l2 2l3 -3l2 2" />
+  </g><text x="680" y="292" font-size="32" fill="#17212B">空间邻接</text><text x="680" y="325" font-size="18" fill="#526372">最终显式图</text></g>
+  <g><rect x="885" y="250" width="265" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="915" y="292" font-size="32" fill="#17212B">POI 相似</text><text x="915" y="325" font-size="18" fill="#526372">候选多图</text></g>
+  <g><rect x="590" y="380" width="265" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="620" y="422" font-size="32" fill="#17212B">历史流量相关</text><text x="620" y="455" font-size="18" fill="#526372">候选多图</text></g>
+  <g><rect x="885" y="380" width="265" height="100" fill="#FFFFFF" stroke="#C9D5DF"/><text x="915" y="422" font-size="32" fill="#17212B">轨道拓扑</text><text x="915" y="455" font-size="18" fill="#526372">候选多图</text></g>
+  <path d="M720 512H1015" stroke="#C9D5DF" stroke-width="3"/><circle cx="720" cy="512" r="11" fill="#F26A2E"/><circle cx="1015" cy="512" r="11" fill="#2A7F9E"/><text x="720" y="558" text-anchor="middle" font-size="18" fill="#526372">显式空间图</text><text x="1015" y="558" text-anchor="middle" font-size="18" fill="#526372">学习自适应邻接</text><text x="870" y="607" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">最终：双图路径</text>
+ </g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="585" y="630" width="600" height="48" fill="#EAF0F5"/><text x="605" y="661" font-size="18" fill="#526372">多图融合未超过单图；上下文改用门控融合，而非无条件相加。</text></g>
+</svg>
