@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="52" font-weight="700" fill="#103B5C">从原始流量到统一训练张量</text><text x="1200" y="64" font-size="16" fill="#526372">07</text><text x="55" y="122" font-size="22" fill="#526372">先统一时间、空间和数据类型，再让外部信息进入同一个节点—时间坐标系。</text></g>
+ <g id="pipeline" font-family="Microsoft YaHei, Arial, sans-serif">
+  <line x1="170" y1="300" x2="1085" y2="300" stroke="#C9D5DF" stroke-width="5"/>
+  <g id="stage1"><circle cx="170" cy="300" r="58" fill="#103B5C"/><!-- icon: tabler-outline/database -->
+  <g transform="translate(142, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0" />
+    <path d="M4 6v6a8 3 0 0 0 16 0v-6" />
+    <path d="M4 12v6a8 3 0 0 0 16 0v-6" />
+  </g><text x="85" y="405" font-size="26" font-weight="700" fill="#103B5C">01 汇总</text><text x="85" y="440" font-size="18" fill="#526372">14 个时间分段</text><text x="85" y="468" font-size="18" fill="#526372">流入 / 流出双通道</text></g>
+  <g id="stage2"><circle cx="475" cy="300" r="58" fill="#2A7F9E"/><!-- icon: tabler-outline/calendar -->
+  <g transform="translate(447, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+    <path d="M16 3v4" />
+    <path d="M8 3v4" />
+    <path d="M4 11h16" />
+    <path d="M11 15h1" />
+    <path d="M12 15v3" />
+  </g><text x="390" y="405" font-size="26" font-weight="700" fill="#103B5C">02 时间规范</text><text x="390" y="440" font-size="18" fill="#526372">本地日期槽 → UTC</text><text x="390" y="468" font-size="18" fill="#526372">去重并保留真实间断</text></g>
+  <g id="stage3"><circle cx="780" cy="300" r="58" fill="#F26A2E"/><!-- icon: tabler-outline/shield-check -->
+  <g transform="translate(752, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+    <path d="M15 19l2 2l4 -4" />
+  </g><text x="695" y="405" font-size="26" font-weight="700" fill="#103B5C">03 质量检查</text><text x="695" y="440" font-size="18" fill="#526372">NaN / 重复 / 值域</text><text x="695" y="468" font-size="18" fill="#526372">30 分钟连续性审计</text></g>
+  <g id="stage4"><circle cx="1085" cy="300" r="58" fill="#2E7D5B"/><!-- icon: tabler-outline/stack -->
+  <g transform="translate(1057, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M12 6l-8 4l8 4l8 -4l-8 -4" />
+    <path d="M4 14l8 4l8 -4" />
+  </g><text x="995" y="405" font-size="26" font-weight="700" fill="#103B5C">04 标准输出</text><text x="995" y="440" font-size="18" fill="#526372">float32 + datetime64</text><text x="995" y="468" font-size="18" fill="#526372">压缩 NPZ 与元数据</text></g>
+ </g>
+ <g id="facts" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="55" y="535" width="350" height="105" fill="#FFFFFF" stroke="#C9D5DF"/><text x="80" y="573" font-size="18" fill="#526372">标准流量张量</text><text x="80" y="615" font-size="28" font-weight="700" fill="#103B5C">22,484 × 2 × 32 × 32</text>
+  <rect x="430" y="535" width="300" height="105" fill="#FFFFFF" stroke="#C9D5DF"/><text x="455" y="573" font-size="18" fill="#526372">时间分辨率</text><text x="455" y="615" font-size="34" font-weight="700" fill="#F26A2E">30 分钟 / 步</text>
+  <rect x="755" y="535" width="470" height="105" fill="#103B5C"/><text x="780" y="573" font-size="18" fill="#EAF0F5">统一训练坐标</text><text x="780" y="612" font-size="24" font-weight="700" fill="#FFFFFF">timestamp × node_id × channel</text>
+ </g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="684" font-size="16" fill="#526372">数据表述采用匿名化城市网格；原型数据与业务部署环境之间通过相同 schema 和处理规则衔接。</text></g>
+</svg>

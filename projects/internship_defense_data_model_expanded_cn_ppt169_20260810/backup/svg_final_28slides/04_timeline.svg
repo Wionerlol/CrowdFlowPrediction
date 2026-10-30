@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="54" y="78" font-size="56" font-weight="700" fill="#103B5C">五个月实习工作周期与投入分配</text><text x="1170" y="66" font-size="16" fill="#526372">04</text><text x="56" y="128" font-size="36" fill="#17212B">约一半周期用于模型训练、选型、消融和复验。</text></g>
+ <g id="axis" font-family="Microsoft YaHei, Arial, sans-serif">
+  <text x="55" y="205" font-size="18" font-weight="700" fill="#526372">工作流</text>
+  <g font-size="16" fill="#526372" text-anchor="middle"><text x="370" y="205">W1</text><text x="530" y="205">W5</text><text x="690" y="205">W9</text><text x="850" y="205">W13</text><text x="1010" y="205">W17</text><text x="1130" y="205">W20</text></g>
+  <g stroke="#DDE5EC" stroke-width="1"><line x1="350" y1="220" x2="350" y2="580"/><line x1="510" y1="220" x2="510" y2="580"/><line x1="670" y1="220" x2="670" y2="580"/><line x1="830" y1="220" x2="830" y2="580"/><line x1="990" y1="220" x2="990" y2="580"/><line x1="1150" y1="220" x2="1150" y2="580"/></g>
+ </g>
+ <g id="tasks" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g id="t1"><text x="55" y="265" font-size="18" fill="#17212B">需求与论文</text><rect x="350" y="238" width="120" height="38" fill="#2A7F9E"/><text x="410" y="264" text-anchor="middle" font-size="18" fill="#FFFFFF">3 周</text></g>
+  <g id="t2"><text x="55" y="335" font-size="18" fill="#17212B">数据、特征、图、Pipeline</text><rect x="430" y="308" width="160" height="38" fill="#103B5C"/><text x="510" y="334" text-anchor="middle" font-size="18" fill="#FFFFFF">4 周</text></g>
+  <g id="t3"><text x="55" y="405" font-size="18" font-weight="700" fill="#17212B">模型基线、训练、消融、多 seed</text><rect x="590" y="378" width="280" height="38" fill="#F26A2E"/><text x="730" y="404" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">7 周 · 核心投入</text></g>
+  <g id="t4"><text x="55" y="475" font-size="18" fill="#17212B">异常检测、融合与分类</text><rect x="870" y="448" width="120" height="38" fill="#2A7F9E"/><text x="930" y="474" text-anchor="middle" font-size="18" fill="#FFFFFF">3 周</text></g>
+  <g id="t5"><text x="55" y="545" font-size="18" fill="#17212B">API、Web、XAI、性能与答辩</text><rect x="990" y="518" width="120" height="38" fill="#2E7D5B"/><text x="1050" y="544" text-anchor="middle" font-size="18" fill="#FFFFFF">3 周</text></g>
+ </g>
+ <g id="allocation" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="592" width="1160" height="82" fill="#EAF0F5"/><text x="78" y="624" font-size="18" font-weight="700" fill="#103B5C">实习投入：模型阶段 W7–W14 共 7 周，占 35%，是最长单一工作流。</text><text x="78" y="654" font-size="18" fill="#526372">答辩建议：模型章节 11 页、约 7–8 分钟，占完整汇报约 45%；重点讲实验因果链与负结果。</text></g>
+</svg>

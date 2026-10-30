@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#103B5C" /><path d="M0 580C260 520 430 650 670 548S1040 400 1280 470V720H0Z" fill="#2A7F9E" fill-opacity="0.28" /></g>
+ <g id="title" font-family="Microsoft YaHei, Arial, sans-serif"><text x="65" y="125" font-size="18" font-weight="700" fill="#F26A2E" letter-spacing="3">CONCLUSION</text><text fill="#FFFFFF" font-size="88" font-weight="700" x="65" y="235">从城市流量</text><text fill="#FFFFFF" font-size="88" font-weight="700" x="65" y="340">到安全信号</text><text fill="#EAF0F5" font-size="36" x="68" y="430">把城市流动变成可预测、</text><text fill="#EAF0F5" font-size="36" x="68" y="485">可解释、可处置的安全信号。</text></g>
+ <g id="numbers" font-family="Microsoft YaHei, Arial, sans-serif"><line x1="790" y1="120" x2="790" y2="600" stroke="#2A7F9E" stroke-width="2" /><text x="840" y="185" font-size="64" font-weight="700" fill="#F26A2E">15.9030</text><text x="842" y="220" font-size="18" fill="#C9D5DF">24h 平均 MAE</text><text x="840" y="345" font-size="64" font-weight="700" fill="#FFFFFF">131</text><text x="842" y="380" font-size="18" fill="#C9D5DF">融合异常事件</text><text x="840" y="505" font-size="64" font-weight="700" fill="#2E7D5B">1.39×</text><text x="842" y="540" font-size="18" fill="#C9D5DF">优化后端到端加速</text></g>
+ <g id="signal"><path d="M65 610C350 560 570 665 780 602S1050 570 1170 610" fill="none" stroke="#F26A2E" stroke-width="6" /><circle cx="1170" cy="610" r="34" fill="#F26A2E" />
+  <g transform="translate(1145, 585) scale(2.08333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+    <path d="M15 19l2 2l4 -4" />
+  </g></g>
+ <g id="qa" font-family="Microsoft YaHei, Arial, sans-serif"><text x="1195" y="680" text-anchor="end" font-size="34" font-weight="700" fill="#FFFFFF">Q&amp;A</text><text x="65" y="680" font-size="16" fill="#C9D5DF">五个月算法实习 · 研究到系统的完整闭环</text></g>
+</svg>

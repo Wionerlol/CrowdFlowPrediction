@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#C9D5DF"/></marker></defs>
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="56" font-weight="700" fill="#103B5C">最终 AGFormer：门控上下文 + 双图路径 + 线性残差</text><text x="1165" y="64" font-size="16" fill="#526372">12</text></g>
+ <g id="layers" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g id="input"><rect x="60" y="120" width="1160" height="100" fill="#EAF0F5"/><text x="82" y="158" font-size="34" font-weight="700" fill="#103B5C">输入层</text><text x="320" y="158" font-size="32" fill="#17212B">48 步 inflow / outflow</text><text x="720" y="158" font-size="32" fill="#17212B">7 维时间日历</text><text x="1010" y="158" font-size="32" fill="#17212B">33 维静态</text><text x="82" y="198" font-size="18" fill="#526372">历史序列与节点/时间上下文在相同节点索引下对齐</text></g>
+  <path d="M640 220V250" stroke="#C9D5DF" stroke-width="4" marker-end="url(#a)"/>
+  <g id="gate"><rect x="160" y="255" width="960" height="90" fill="#2A7F9E"/><text x="190" y="310" font-size="34" font-weight="700" fill="#FFFFFF">门控融合</text><text x="430" y="310" font-size="32" fill="#FFFFFF">根据当前流量状态，调节时间与静态上下文贡献</text></g>
+  <path d="M640 345V375" stroke="#C9D5DF" stroke-width="4" marker-end="url(#a)"/>
+  <g id="model"><rect x="60" y="380" width="500" height="135" fill="#FFFFFF" stroke="#103B5C" stroke-width="3"/><text x="85" y="425" font-size="34" font-weight="700" fill="#103B5C">时间路径</text><text x="85" y="468" font-size="32" fill="#17212B">2 层 · 4 头 · d_model=32</text><text x="85" y="500" font-size="18" fill="#526372">自注意力学习 48 步长时依赖</text>
+  <rect x="590" y="380" width="630" height="135" fill="#FFFFFF" stroke="#F26A2E" stroke-width="3"/><text x="615" y="425" font-size="34" font-weight="700" fill="#103B5C">空间双图路径</text><text x="615" y="468" font-size="32" fill="#17212B">预定义空间 GCN + adaptive adjacency</text><text x="615" y="500" font-size="18" fill="#526372">显式邻域提供稳定先验，节点嵌入学习数据驱动关系</text></g>
+  <path d="M310 515V550M905 515V550" stroke="#C9D5DF" stroke-width="4" marker-end="url(#a)"/>
+  <g id="output"><rect x="60" y="555" width="1160" height="100" fill="#103B5C"/><text x="85" y="600" font-size="34" font-weight="700" fill="#FFFFFF">输出层</text><text x="280" y="600" font-size="32" fill="#FFFFFF">prediction = nonlinear AGFormer + Linear(history inflow)</text><text x="85" y="638" font-size="18" fill="#C9D5DF">seed 42 / 7 / 21 / 123 预测均值 ensemble，线性头守住惯性，非线性分支学习偏差。</text></g>
+ </g>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 720" width="1280" height="720">
+  <g id="background">
+    <rect width="1280" height="720" fill="#103B5C"/>
+    <image href="../images/beijing_landsat.webp" x="610" y="0" width="670" height="720" preserveAspectRatio="xMidYMid slice"/>
+    <rect x="560" y="0" width="720" height="720" fill="#103B5C" fill-opacity="0.28"/>
+    <rect x="0" y="0" width="720" height="720" fill="#103B5C"/>
+  </g>
+  <g id="grid" stroke="#2A7F9E" stroke-width="1" stroke-opacity="0.32">
+    <path d="M640 0V720M800 0V720M960 0V720M1120 0V720"/>
+    <path d="M560 120H1280M560 280H1280M560 440H1280M560 600H1280"/>
+  </g>
+  <g id="signal">
+    <path d="M540 526 C670 494 745 546 842 454 S1018 342 1210 274" fill="none" stroke="#F26A2E" stroke-width="7"/>
+    <circle cx="842" cy="454" r="11" fill="#F26A2E"/>
+    <circle cx="1210" cy="274" r="21" fill="#F26A2E"/>
+    <use data-icon="tabler-outline/shield-check" x="1194" y="258" width="32" height="32" stroke="#FFFFFF" stroke-width="2" fill="none"/>
+  </g>
+  <g id="title" font-family="Microsoft YaHei, Arial, sans-serif">
+    <text x="62" y="150" font-size="18" font-weight="700" fill="#F26A2E" letter-spacing="3">ALGORITHM INTERNSHIP DEFENSE</text>
+    <text x="62" y="250" font-size="88" font-weight="700" fill="#FFFFFF">
+      <tspan x="62" dy="0">多源时空数据驱动的</tspan>
+      <tspan x="62" dy="108">城市人流预测与异常预警</tspan>
+    </text>
+    <text x="66" y="505" font-size="34" fill="#EAF0F5">网约车安全方向算法实习项目答辩</text>
+    <line x1="66" y1="548" x2="470" y2="548" stroke="#2A7F9E" stroke-width="3"/>
+    <text x="66" y="604" font-size="18" fill="#C9D5DF">姓名：________　学号：________　指导老师：________</text>
+    <text x="66" y="642" font-size="18" fill="#C9D5DF">答辩日期：2026 年 ____ 月 ____ 日</text>
+  </g>
+</svg>

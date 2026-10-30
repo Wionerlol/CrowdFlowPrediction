@@ -1,0 +1,1 @@
+这一页列出主要技术来源。模型图直接引用 STGCN Figure 2、Graph WaveNet Figure 3、Transformer Figure 1 和 Spacetimeformer Figure 3，并在相关页面标明作者、会议或 arXiv 编号。项目价值不在于声称发明这些基础模块，而在于把它们放到统一数据规则下做工程组合、严格对照和实证选择。

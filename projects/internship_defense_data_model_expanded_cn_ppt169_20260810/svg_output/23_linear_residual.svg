@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="76" font-size="52" font-weight="700" fill="#103B5C">最有效的结构改动，来自一次失败模型中的成功模块</text><text x="1165" y="64" font-size="16" fill="#526372">23</text></g>
+ <g id="formula" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="110" width="1170" height="88" fill="#103B5C"/><text x="640" y="150" text-anchor="middle" font-size="30" font-family="Consolas, Courier New, monospace" fill="#FFFFFF">prediction = nonlinear backbone + Linear(history inflow)</text><text x="640" y="182" text-anchor="middle" font-size="16" fill="#C9D5DF">同一节点过去 48 步 inflow 直接映射到未来 48 步；主干只需学习剩余非线性偏差。</text></g>
+ <g id="chart"><rect x="55" y="225" width="740" height="340" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig4_1_linear_horizon.png" x="75" y="245" width="700" height="300" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="evidence" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="825" y="225" width="400" height="105" fill="#FFFFFF" stroke="#C9D5DF"/><text x="850" y="260" font-size="22" font-weight="700" fill="#103B5C">先在 Spacetimeformer 发现</text><text x="850" y="294" font-size="30" font-weight="700" fill="#F26A2E">18.2950 → 17.0688</text><text x="850" y="318" font-size="16" fill="#526372">avg MAE，下降约 6.70%</text>
+  <rect x="825" y="345" width="400" height="105" fill="#FFFFFF" stroke="#F26A2E" stroke-width="2"/><text x="850" y="380" font-size="22" font-weight="700" fill="#103B5C">再迁移到 AGFormer</text><text x="850" y="414" font-size="30" font-weight="700" fill="#F26A2E">16.5350 → 16.1132</text><text x="850" y="438" font-size="16" fill="#526372">相同 seed42，下降 2.55%</text>
+  <rect x="825" y="465" width="400" height="100" fill="#EAF0F5"/><text x="850" y="500" font-size="22" font-weight="700" fill="#103B5C">为什么 RMSE 没同步提高？</text><text x="850" y="532" font-size="18" fill="#526372">线性头降低平均偏差，却可能平滑极端峰值；</text><text x="850" y="556" font-size="16" fill="#C97A11">RMSE 30.1288 → 30.3198，略升 0.19。</text>
+ </g>
+ <g id="lesson" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="592" width="1170" height="62" fill="#EAF0F5"/><text x="78" y="630" font-size="20" fill="#17212B"><tspan font-weight="700" fill="#103B5C">机制解释：</tspan>城市流量含强自回归惯性；显式线性分支减少主干学习负担，因此短期 h1/h3 的收益最明显。</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="690" font-size="16" fill="#526372">该模块随后进行 4 个随机种子复验，避免把 seed42 的偶然性误当成结构增益。</text></g>
+</svg>

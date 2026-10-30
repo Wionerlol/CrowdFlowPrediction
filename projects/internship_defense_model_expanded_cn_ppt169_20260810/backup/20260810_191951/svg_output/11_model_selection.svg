@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="56" font-weight="700" fill="#103B5C">架构选型：通用全局注意力输给了任务先验</text><text x="1165" y="64" font-size="16" fill="#526372">11</text></g>
+ <g id="chart"><rect x="55" y="115" width="1170" height="350" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/fig3_2_spacetimeformer_ablation.png" x="75" y="135" width="1130" height="310" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="analysis" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g><text x="60" y="520" font-size="34" font-weight="700" fill="#2A7F9E">预期</text><text x="60" y="563" font-size="18" fill="#526372"><tspan x="60">local/global attention</tspan><tspan x="60" dy="29">捕捉跨变量长依赖</tspan></text></g>
+  <path d="M315 548H380" stroke="#C9D5DF" stroke-width="4"/>
+  <g><text x="405" y="520" font-size="34" font-weight="700" fill="#F26A2E">观察</text><text x="405" y="563" font-size="18" fill="#526372"><tspan x="405">原版式 embedding 与</tspan><tspan x="405" dy="29">cross-attention 对齐后仍落后</tspan></text></g>
+  <path d="M675 548H740" stroke="#C9D5DF" stroke-width="4"/>
+  <g><text x="765" y="520" font-size="34" font-weight="700" fill="#103B5C">解释</text><text x="765" y="563" font-size="18" fill="#526372"><tspan x="765">1024 × 48 token 迫使注意力近似；</tspan><tspan x="765" dy="29">规则网格更需要显式图先验</tspan></text></g>
+ </g>
+ <g id="conclusion" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="630" width="1170" height="54" fill="#103B5C"/><text x="640" y="665" text-anchor="middle" font-size="18" fill="#FFFFFF">结论：不是“Transformer 不好”，而是归纳偏置、计算规模与数据量必须匹配。</text></g>
+</svg>

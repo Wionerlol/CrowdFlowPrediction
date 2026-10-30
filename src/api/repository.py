@@ -354,10 +354,31 @@ class Week6ArtifactRepository:
                 # avoid merge suffixes if a future alert export already
                 # carries stale center_lon/center_lat columns.
                 frame = frame.drop(columns=["center_lon", "center_lat"], errors="ignore")
-                frame["_center_row_key"] = frame["main_centroid_row"].round().astype("Int64")
-                frame["_center_col_key"] = frame["main_centroid_col"].round().astype("Int64")
+                main_row = pd.to_numeric(frame["main_centroid_row"], errors="coerce").round()
+                main_col = pd.to_numeric(frame["main_centroid_col"], errors="coerce").round()
+                main_valid = main_row.between(0, 31) & main_col.between(0, 31)
+
+                # Spatially fragmented events may not have a single main
+                # cluster centroid. Their first top_cells entry is the
+                # highest-scoring detected grid and provides a deterministic,
+                # explainable map anchor without changing the event itself.
+                top_cell = (
+                    frame.get("top_cells", pd.Series("", index=frame.index))
+                    .fillna("")
+                    .astype(str)
+                    .str.extract(r"r(?P<row>\d+)\|c(?P<col>\d+)")
+                    .apply(pd.to_numeric, errors="coerce")
+                )
+                top_valid = top_cell["row"].between(0, 31) & top_cell["col"].between(0, 31)
+                frame["_center_row_key"] = main_row.where(main_valid, top_cell["row"]).astype("Int64")
+                frame["_center_col_key"] = main_col.where(main_valid, top_cell["col"]).astype("Int64")
+                frame["coordinate_source"] = np.select(
+                    [main_valid, ~main_valid & top_valid],
+                    ["main_centroid", "top_cell_fallback"],
+                    default="unavailable",
+                )
                 locations = self._grid_meta()[
-                    ["row", "col", "center_lon", "center_lat"]
+                    ["grid_id", "row", "col", "center_lon", "center_lat"]
                 ].rename(columns={"row": "_center_row_key", "col": "_center_col_key"})
                 frame = frame.merge(
                     locations,
@@ -365,7 +386,18 @@ class Week6ArtifactRepository:
                     how="left",
                     sort=False,
                     validate="many_to_one",
-                ).drop(columns=["_center_row_key", "_center_col_key"])
+                ).rename(columns={"grid_id": "map_grid_id"})
+                frame["map_alignment_status"] = np.where(
+                    frame["center_lon"].notna() & frame["center_lat"].notna(),
+                    "aligned",
+                    "unavailable",
+                )
+                frame = frame.rename(
+                    columns={
+                        "_center_row_key": "map_row",
+                        "_center_col_key": "map_col",
+                    }
+                )
             return frame
 
         return self.cache.derived(
@@ -400,33 +432,55 @@ class Week6ArtifactRepository:
         if min_score is not None and "max_score" in frame:
             frame = frame.loc[frame["max_score"] >= float(min_score)]
         if region is not None:
+            row_column = "map_row" if "map_row" in frame else "main_centroid_row"
+            col_column = "map_col" if "map_col" in frame else "main_centroid_col"
             if region.row_min is not None:
-                frame = frame.loc[frame["main_centroid_row"] >= region.row_min]
+                frame = frame.loc[frame[row_column] >= region.row_min]
             if region.row_max is not None:
-                frame = frame.loc[frame["main_centroid_row"] <= region.row_max]
+                frame = frame.loc[frame[row_column] <= region.row_max]
             if region.col_min is not None:
-                frame = frame.loc[frame["main_centroid_col"] >= region.col_min]
+                frame = frame.loc[frame[col_column] >= region.col_min]
             if region.col_max is not None:
-                frame = frame.loc[frame["main_centroid_col"] <= region.col_max]
+                frame = frame.loc[frame[col_column] <= region.col_max]
             if region.grid_ids is not None:
                 selected = self._select_grid(region)
                 pairs = set(zip(selected["row"].astype(int), selected["col"].astype(int)))
                 rounded = zip(
-                    frame["main_centroid_row"].round().astype("Int64"),
-                    frame["main_centroid_col"].round().astype("Int64"),
+                    frame[row_column].round().astype("Int64"),
+                    frame[col_column].round().astype("Int64"),
                 )
                 frame = frame.loc[[
                     pd.notna(row) and pd.notna(col) and (int(row), int(col)) in pairs
                     for row, col in rounded
                 ]]
         total = int(len(frame))
+        coordinate_source_series = frame.get(
+            "coordinate_source", pd.Series("unavailable", index=frame.index, dtype=str)
+        )
+        alignment_status_series = frame.get(
+            "map_alignment_status", pd.Series("unavailable", index=frame.index, dtype=str)
+        )
+        coordinate_sources = coordinate_source_series.value_counts().to_dict()
+        map_alignment = {
+            "aligned": int((alignment_status_series == "aligned").sum()),
+            "main_centroid": int(coordinate_sources.get("main_centroid", 0)),
+            "top_cell_fallback": int(coordinate_sources.get("top_cell_fallback", 0)),
+            "unavailable": int(coordinate_sources.get("unavailable", 0)),
+        }
         if "start_time" in frame:
             frame = frame.sort_values("start_time", ascending=False)
         page = frame.iloc[int(offset) : int(offset) + int(limit)].copy()
         for column in ["start_time", "end_time"]:
             if column in page:
                 page[column] = page[column].map(_iso_timestamp)
-        return {"source": source, "total": total, "offset": int(offset), "limit": int(limit), "events": _records(page)}
+        return {
+            "source": source,
+            "total": total,
+            "offset": int(offset),
+            "limit": int(limit),
+            "map_alignment": map_alignment,
+            "events": _records(page),
+        }
 
     def event_detail(self, event_id: int, *, source: str) -> dict[str, Any]:
         frame = self._events(source)

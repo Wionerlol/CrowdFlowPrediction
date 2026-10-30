@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="78" font-size="56" font-weight="700" fill="#103B5C">注意力、TreeSHAP 与异常上下文证据</text><text x="1165" y="64" font-size="16" fill="#526372">18</text></g>
+ <g id="attention"><rect x="55" y="115" width="610" height="320" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/attention_temporal_heatmap.png" x="75" y="135" width="570" height="280" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="shap"><rect x="695" y="115" width="530" height="320" fill="#FFFFFF" stroke="#C9D5DF"/><image href="../images/shap_group_importance.png" x="715" y="135" width="490" height="280" preserveAspectRatio="xMidYMid meet"/></g>
+ <g id="evidence" font-family="Microsoft YaHei, Arial, sans-serif">
+  <text x="60" y="485" font-size="34" font-weight="700" fill="#103B5C">注意力：熵 0.9956</text><text x="60" y="528" font-size="18" fill="#526372"><tspan x="60">聚合后没有集中到少数 lag；</tspan><tspan x="60" dy="30">时间依赖呈分散式利用。</tspan></text>
+  <text x="695" y="485" font-size="34" font-weight="700" fill="#103B5C">TreeSHAP：代理 R² 0.9926</text><text x="695" y="528" font-size="18" fill="#526372"><tspan x="695">历史流量贡献 97.43%；</tspan><tspan x="695" dy="30">日历上下文贡献 2.33%。</tspan></text>
+ </g>
+ <g id="context" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="600" width="1170" height="78" fill="#EAF0F5"/><text x="78" y="630" font-size="18" font-weight="700" fill="#103B5C">异常上下文</text><text x="230" y="630" font-size="18" fill="#526372">131 个事件中 82 个匹配天气/日历候选证据，49 个无外部上下文。</text><text x="78" y="660" font-size="18" fill="#C97A11">Attention、SHAP 和天气关联解释“相关贡献”，不构成因果证明。</text></g>
+</svg>

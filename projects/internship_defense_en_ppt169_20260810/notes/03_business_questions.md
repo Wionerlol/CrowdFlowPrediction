@@ -1,0 +1,1 @@
+Ride-hailing safety requires three decisions: anticipate how each region will change, detect deviations beyond normal behavior, and respond with an event type and alert tier. A model score alone is insufficient; it must retain time, space and evidence so it can become an operational event. The next slide shows how the five-month workload was distributed.

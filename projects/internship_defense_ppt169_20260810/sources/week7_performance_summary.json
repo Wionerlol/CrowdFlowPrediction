@@ -1,0 +1,358 @@
+{
+  "tag": "week7_system_performance_v5",
+  "config": "configs/week7_performance.yaml",
+  "pipeline_variants": [
+    {
+      "name": "baseline_fp32",
+      "wall_seconds": 9.162451847980265,
+      "peak_rss_mib": 3881.51953125,
+      "pipeline_seconds": 6.416112937033176,
+      "cuda_peak_allocated_mib": 826.2470703125,
+      "cuda_peak_reserved_mib": 938.0,
+      "model_inference_seconds": 2.0058488845825195,
+      "forecast_inference_seconds": 1.7410669326782227,
+      "statistical_seconds": 1.7230937480926514,
+      "reconstruction_seconds": 0.24460506439208984,
+      "statistical_cache_hit": false,
+      "forecast_reused": false,
+      "prediction_precision": "fp32",
+      "prediction_batch_size": 8,
+      "prediction_num_workers": 2,
+      "scores_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/scores.npz",
+      "forecast_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/forecast_24h.npz",
+      "summary_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/realtime/summary.json",
+      "log_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/baseline_fp32/pipeline.log"
+    },
+    {
+      "name": "optimized_cold_fp32",
+      "wall_seconds": 8.845502457988914,
+      "peak_rss_mib": 2793.1953125,
+      "pipeline_seconds": 6.106252775003668,
+      "cuda_peak_allocated_mib": 703.7470703125,
+      "cuda_peak_reserved_mib": 938.0,
+      "model_inference_seconds": 3.086782693862915,
+      "forecast_inference_seconds": 8.344650268554688e-06,
+      "statistical_seconds": 1.9276416301727295,
+      "reconstruction_seconds": 0.31071949005126953,
+      "statistical_cache_hit": false,
+      "forecast_reused": true,
+      "prediction_precision": "fp32",
+      "prediction_batch_size": 8,
+      "prediction_num_workers": 0,
+      "scores_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_cold_fp32/realtime/scores.npz",
+      "forecast_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_cold_fp32/realtime/forecast_24h.npz",
+      "summary_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_cold_fp32/realtime/summary.json",
+      "log_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_cold_fp32/pipeline.log"
+    },
+    {
+      "name": "optimized_warm_fp32",
+      "wall_seconds": 7.388796527986415,
+      "peak_rss_mib": 1791.15234375,
+      "pipeline_seconds": 4.613278482982423,
+      "cuda_peak_allocated_mib": 703.7470703125,
+      "cuda_peak_reserved_mib": 938.0,
+      "model_inference_seconds": 3.3640003204345703,
+      "forecast_inference_seconds": 1.1682510375976562e-05,
+      "statistical_seconds": 0.03767204284667969,
+      "reconstruction_seconds": 0.32411670684814453,
+      "statistical_cache_hit": true,
+      "forecast_reused": true,
+      "prediction_precision": "fp32",
+      "prediction_batch_size": 8,
+      "prediction_num_workers": 0,
+      "scores_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/realtime/scores.npz",
+      "forecast_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/realtime/forecast_24h.npz",
+      "summary_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/realtime/summary.json",
+      "log_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp32/pipeline.log"
+    },
+    {
+      "name": "optimized_warm_fp16",
+      "wall_seconds": 7.408352372003719,
+      "peak_rss_mib": 1894.37890625,
+      "pipeline_seconds": 4.596166891977191,
+      "cuda_peak_allocated_mib": 419.6845703125,
+      "cuda_peak_reserved_mib": 554.0,
+      "model_inference_seconds": 3.382540225982666,
+      "forecast_inference_seconds": 1.0967254638671875e-05,
+      "statistical_seconds": 0.033597707748413086,
+      "reconstruction_seconds": 0.3978688716888428,
+      "statistical_cache_hit": true,
+      "forecast_reused": true,
+      "prediction_precision": "fp16",
+      "prediction_batch_size": 8,
+      "prediction_num_workers": 0,
+      "scores_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp16/realtime/scores.npz",
+      "forecast_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp16/realtime/forecast_24h.npz",
+      "summary_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp16/realtime/summary.json",
+      "log_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/optimized_warm_fp16/pipeline.log"
+    }
+  ],
+  "comparisons": {
+    "optimized_fp32": {
+      "common_arrays": [
+        "fusion_mask",
+        "fusion_score",
+        "pred_flow",
+        "prediction_confidence",
+        "prediction_residual",
+        "recon_score",
+        "reconstruction_error",
+        "stat_score",
+        "stat_z",
+        "target_indices",
+        "timestamps",
+        "true_flow",
+        "true_outflow"
+      ],
+      "numeric": {
+        "fusion_score": {
+          "max_abs": 1.6763806343078613e-07,
+          "mean_abs": 2.594485219257573e-09
+        },
+        "pred_flow": {
+          "max_abs": 0.0001220703125,
+          "mean_abs": 2.1749486525853476e-06
+        },
+        "prediction_confidence": {
+          "max_abs": 1.6540288925170898e-06,
+          "mean_abs": 2.5955884404756564e-08
+        },
+        "prediction_residual": {
+          "max_abs": 0.0001220703125,
+          "mean_abs": 2.1746382117271423e-06
+        },
+        "recon_score": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "reconstruction_error": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "stat_score": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "stat_z": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "target_indices": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "true_flow": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "true_outflow": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "exact": {
+        "fusion_mask": true,
+        "timestamps": true
+      },
+      "fusion_mask_mismatch_rate": 0.0
+    },
+    "fp16": {
+      "common_arrays": [
+        "fusion_mask",
+        "fusion_score",
+        "pred_flow",
+        "prediction_confidence",
+        "prediction_residual",
+        "recon_score",
+        "reconstruction_error",
+        "stat_score",
+        "stat_z",
+        "target_indices",
+        "timestamps",
+        "true_flow",
+        "true_outflow"
+      ],
+      "numeric": {
+        "fusion_score": {
+          "max_abs": 0.001133263111114502,
+          "mean_abs": 4.06841775391816e-05
+        },
+        "pred_flow": {
+          "max_abs": 0.668701171875,
+          "mean_abs": 0.03798527402492861
+        },
+        "prediction_confidence": {
+          "max_abs": 0.011332660913467407,
+          "mean_abs": 0.0004068417922097704
+        },
+        "prediction_residual": {
+          "max_abs": 0.668701171875,
+          "mean_abs": 0.03798017053244015
+        },
+        "recon_score": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "reconstruction_error": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "stat_score": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "stat_z": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "target_indices": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "true_flow": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "true_outflow": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "exact": {
+        "fusion_mask": true,
+        "timestamps": true
+      },
+      "fusion_mask_mismatch_rate": 0.0
+    },
+    "optimized_forecast_fp32": {
+      "common_arrays": [
+        "city",
+        "member_tags",
+        "origin_time",
+        "pred_flow",
+        "step_minutes",
+        "target_indices",
+        "timestamps"
+      ],
+      "numeric": {
+        "pred_flow": {
+          "max_abs": 9.1552734375e-05,
+          "mean_abs": 3.1603267416357994e-06
+        },
+        "step_minutes": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        },
+        "target_indices": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "exact": {
+        "city": true,
+        "member_tags": true,
+        "origin_time": true,
+        "timestamps": true
+      },
+      "fusion_mask_mismatch_rate": null
+    }
+  },
+  "fp16_validation": {
+    "scope": "stratified_contiguous_test_segments",
+    "segments": [
+      [
+        0,
+        64
+      ],
+      [
+        1250,
+        64
+      ],
+      [
+        2500,
+        64
+      ],
+      [
+        3958,
+        64
+      ]
+    ],
+    "sample_windows": 256,
+    "node_predictions": 262144,
+    "prediction_max_abs_diff": 0.97088623046875,
+    "prediction_mean_abs_diff": 0.034193333238363266,
+    "mae_semantics": "masked where abs(true_flow) > 0, matching project metrics",
+    "fp32_masked_mae": 10.305124282836914,
+    "fp16_masked_mae": 10.305076599121094,
+    "masked_mae_delta": -4.76837158203125e-05,
+    "fp32_unmasked_mae_diagnostic": 9.803590774536133,
+    "fp16_unmasked_mae_diagnostic": 9.803507804870605,
+    "fusion_mask_mismatch_rate": 0.0,
+    "passed": true,
+    "quality_gate_candidate_precision": "fp16",
+    "quality_gate_passed": true,
+    "week5_config": "/home/louis/projects/DidiRemote/configs/week5_anomaly.yaml",
+    "week5_scores": "/home/louis/projects/DidiRemote/outputs/week5_anomaly/scores.npz",
+    "week5_scores_sha256": "88a92a1c460af374cc455f4f8ba2f59d24de4924e9844bd641ecc20bd17d1b29",
+    "sample_predictions": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/fp16_validation/sample_predictions.npz",
+    "sample_predictions_sha256": "662f413d770f66b83be82c0024fcef3d92d6d76e0b56de3d9e9e038fc08e6d48",
+    "summary_path": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/fp16_validation/summary.json",
+    "summary_sha256": "5f4c4f137828f356eb5b38ad8b0c18217e9d28fe47c61c3feff66fac78056be1"
+  },
+  "quantization": {
+    "status": "evaluated",
+    "checkpoint": "/home/louis/projects/DidiRemote/outputs/checkpoints/agformer_gate_context_linear_seed42/best.pt",
+    "scope": "single_model_single_latest_window_cpu_dynamic_linear_int8",
+    "fp32_latency_ms_mean": 259.691977,
+    "int8_latency_ms_mean": 199.01953,
+    "speedup": 1.3048567494858418,
+    "fp32_state_bytes": 4564024,
+    "int8_state_bytes": 4507608,
+    "size_reduction": 0.012361021765003866,
+    "prediction_max_abs_diff": 0.0855017900466919,
+    "prediction_mean_abs_diff": 0.008697092533111572
+  },
+  "api": {
+    "baseline_csv": "/home/louis/projects/DidiRemote/outputs/week7_evaluation/final_system_v1/api_benchmark.csv",
+    "optimized_csv": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/api_optimized.csv",
+    "comparison_csv": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/api_comparison.csv",
+    "resources": {
+      "server_command": [
+        "/home/louis/projects/DidiRemote/.venv/bin/python",
+        "scripts/run_week6_api.py",
+        "--config",
+        "configs/week6_web.yaml",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18180"
+      ],
+      "host": "127.0.0.1",
+      "port": 18180,
+      "startup_seconds": 0.5114355100085959,
+      "idle_rss_mib": 125.74609375,
+      "peak_rss_mib": 137.390625,
+      "memory_samples": 780,
+      "benchmark_mode": "single_client_sequential_warm_server",
+      "warmups_per_endpoint": 2,
+      "measured_requests_per_endpoint": 100,
+      "wire_bytes_semantics": "HTTP response body bytes from Content-Length when present; headers excluded",
+      "server_log": "outputs/week7_performance/final_system_v5/api_server.log"
+    }
+  },
+  "batch_sweep_csv": "/home/louis/projects/DidiRemote/outputs/week7_performance/final_system_v5/batch_sweep.csv",
+  "batch_sweep_source_csv": "/home/louis/projects/DidiRemote/outputs/week7_performance/batch_sweep_v1.csv",
+  "batch_sweep_sha256": "3684a3464f609ae9ceba3bd23b0f28beb14740ffff0e961369a37afe55dd82e7",
+  "batch_sweep_source_sha256": "3684a3464f609ae9ceba3bd23b0f28beb14740ffff0e961369a37afe55dd82e7",
+  "recommendation": {
+    "deploy_fp32_execution_optimizations": true,
+    "deploy_fp16": false,
+    "fp16_realtime_gate_passed": false,
+    "fp16_supplemental_gate_passed": true,
+    "fp16_speedup": 0.9945189401132075,
+    "fp16_reason": "failed realtime or stratified test-sample gate; keep production fp32",
+    "deploy_dynamic_int8": false,
+    "dynamic_int8_cpu_fallback_candidate": true,
+    "dynamic_int8_reason": "CPU fallback microbenchmark passed, but current production inference is CUDA; do not replace the GPU ensemble without an end-to-end CPU benchmark"
+  }
+}

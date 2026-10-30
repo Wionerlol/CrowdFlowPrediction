@@ -78,9 +78,9 @@ def _view_state() -> pdk.ViewState:
     return pdk.ViewState(
         longitude=(west + east) / 2,
         latitude=(south + north) / 2,
-        zoom=9.15,
+        zoom=9.25,
         min_zoom=8.1,
-        max_zoom=14,
+        max_zoom=15,
         pitch=0,
         bearing=0,
     )
@@ -134,7 +134,7 @@ def flow_satellite_map_html(
         data=frame,
         get_position="[center_lon, center_lat]",
         get_weight=value_field,
-        radius_pixels=28,
+        radius_pixels=32,
         intensity=1.15,
         threshold=0.035,
         color_range=FLOW_COLOR_RANGE,
@@ -152,6 +152,24 @@ def flow_satellite_map_html(
         highlight_color=[255, 255, 255, 90],
         stroked=False,
     )
+    anomaly_mask = (
+        frame["is_anomaly"].fillna(False).astype(bool)
+        if "is_anomaly" in frame
+        else pd.Series(False, index=frame.index)
+    )
+    anomaly_frame = frame.loc[anomaly_mask].copy()
+    anomaly_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=anomaly_frame,
+        get_position="[center_lon, center_lat]",
+        get_radius=780,
+        get_fill_color=[220, 38, 38, 24],
+        get_line_color=[255, 255, 255, 245],
+        line_width_min_pixels=2,
+        stroked=True,
+        filled=True,
+        pickable=False,
+    )
     tooltip = {
         "html": (
             "<b>网格 #{grid_id}</b><br/>"
@@ -163,7 +181,7 @@ def flow_satellite_map_html(
     layers = [_bitmap_layer(basemap_opacity)]
     if show_ring_roads:
         layers.append(_ring_roads_layer())
-    layers.extend([heatmap, hover_points])
+    layers.extend([heatmap, anomaly_layer, hover_points])
     deck = pdk.Deck(
         layers=layers,
         initial_view_state=_view_state(),
@@ -193,13 +211,21 @@ def event_satellite_map_html(
     )
     scores = pd.to_numeric(frame.get("max_score", 0.0), errors="coerce").fillna(0.0)
     frame["_radius_m"] = 550 + scores.clip(0, 1) * 1_250
+    selected = frame.get("is_selected", pd.Series(False, index=frame.index)).fillna(False).astype(bool)
+    frame.loc[selected, "_radius_m"] *= 1.45
+    frame["_line_color"] = selected.map(
+        {True: [56, 189, 248, 255], False: [255, 255, 255, 240]}
+    )
+    frame["_line_width"] = selected.map({True: 5, False: 2})
     event_layer = pdk.Layer(
         "ScatterplotLayer",
         data=frame,
         get_position="[center_lon, center_lat]",
         get_radius="_radius_m",
         get_fill_color="_fill_color",
-        get_line_color=[255, 255, 255, 240],
+        get_line_color="_line_color",
+        get_line_width="_line_width",
+        line_width_units="pixels",
         line_width_min_pixels=2,
         stroked=True,
         filled=True,
@@ -210,7 +236,7 @@ def event_satellite_map_html(
         "html": (
             "<b>事件 #{event_id} · {alert_level_zh}</b><br/>"
             "类型：{event_type_zh}<br/>开始：{start_time}<br/>"
-            "最高融合分数：{max_score}"
+            "最高融合分数：{max_score}<br/>坐标来源：{coordinate_source}"
         ),
         "style": {"backgroundColor": "#102a43", "color": "white"},
     }

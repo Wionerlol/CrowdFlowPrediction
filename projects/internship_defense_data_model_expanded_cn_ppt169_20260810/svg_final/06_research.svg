@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="82" font-size="56" font-weight="700" fill="#103B5C">从经典时空图到长序列 Transformer</text><text x="1160" y="65" font-size="16" fill="#526372">06</text><text x="55" y="132" font-size="36" fill="#17212B">文献帮助我把空间先验、长时依赖和无监督异常检测组合成可验证路线。</text></g>
+ <g id="timeline" font-family="Microsoft YaHei, Arial, sans-serif">
+  <line x1="90" y1="330" x2="1190" y2="330" stroke="#C9D5DF" stroke-width="4"/>
+  <g id="p1"><circle cx="125" cy="330" r="16" fill="#2A7F9E"/><text x="125" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">GCN</text><text x="125" y="380" text-anchor="middle" font-size="18" fill="#526372">图传播</text></g>
+  <g id="p2"><circle cx="315" cy="330" r="16" fill="#2A7F9E"/><text x="315" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">STGCN</text><text x="315" y="380" text-anchor="middle" font-size="18" fill="#526372">时空卷积</text></g>
+  <g id="p3"><circle cx="505" cy="330" r="16" fill="#2A7F9E"/><text x="505" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">Transformer</text><text x="505" y="380" text-anchor="middle" font-size="18" fill="#526372">全局依赖</text></g>
+  <g id="p4"><circle cx="695" cy="330" r="16" fill="#2A7F9E"/><text x="695" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">Graph WaveNet</text><text x="695" y="380" text-anchor="middle" font-size="18" fill="#526372">自适应邻接</text></g>
+  <g id="p5"><circle cx="900" cy="330" r="16" fill="#F26A2E"/><text x="900" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#F26A2E">Spacetimeformer</text><text x="900" y="380" text-anchor="middle" font-size="18" fill="#526372">变量 × 时间 token</text></g>
+  <g id="p6"><circle cx="1120" cy="330" r="16" fill="#2E7D5B"/><text x="1120" y="270" text-anchor="middle" font-size="34" font-weight="700" fill="#103B5C">VAE / SHAP</text><text x="1120" y="380" text-anchor="middle" font-size="18" fill="#526372">异常与解释</text></g>
+ </g>
+ <g id="decision" font-family="Microsoft YaHei, Arial, sans-serif"><rect x="55" y="468" width="1170" height="150" fill="#103B5C"/><!-- icon: tabler-outline/file-analytics -->
+  <g transform="translate(85, 500) scale(2.41667)" fill="none" stroke="#F26A2E" stroke-width="2">
+    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
+    <path d="M9 17l0 -5" />
+    <path d="M12 17l0 -1" />
+    <path d="M15 17l0 -3" />
+  </g><text x="170" y="520" font-size="34" font-weight="700" fill="#FFFFFF">项目决策</text><text x="170" y="570" font-size="32" fill="#EAF0F5">显式空间图 + 学习自适应图 + Transformer 时间建模 + 三路异常融合</text><text x="170" y="605" font-size="18" fill="#C9D5DF">AGFormer 为项目自主组合实现，不冒充同名外部论文复现。</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="680" font-size="16" fill="#526372">第 14–23 页逐项说明论文模块如何进入实验；完整参考见第 31 页。</text></g>
+</svg>

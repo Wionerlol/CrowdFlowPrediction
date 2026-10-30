@@ -1,0 +1,37 @@
+No,Filename,Width,Height,AspectRatio,PixelAspectRatio,RatioSource,UsageCount,DisplayRatioVariants,AssetKind,SvgRenderable,PptxNativeSupported,SizeKB,Category,ImageArea_SxS,TextArea_SxS
+1,anomaly_cause_distribution.png,1601,967,1.66,1.66,pixel,1,,bitmap,True,True,53.3,Wide landscape,812x490,328x600
+2,anomaly_event_metrics.png,1779,857,2.08,2.08,pixel,1,,bitmap,True,True,57.5,Ultra-wide,812x391,328x600
+3,anomaly_timestep_methods.png,2351,900,2.61,2.61,pixel,1,,bitmap,True,True,54.1,Ultra-wide,812x311,328x600
+4,anomaly_weather_context.png,1361,967,1.41,1.41,pixel,1,,bitmap,True,True,86.1,Standard landscape,844x600,296x600
+5,api_speedup.png,2046,987,2.07,2.07,pixel,1,,bitmap,True,True,95.3,Ultra-wide,812x392,328x600
+6,attention_spatial_summary.png,1996,888,2.25,2.25,pixel,1,,bitmap,True,True,81.3,Ultra-wide,812x361,328x600
+7,attention_temporal_heatmap.png,2207,923,2.39,2.39,pixel,1,,bitmap,True,True,97.4,Ultra-wide,812x340,328x600
+8,batch_sweep.png,1910,877,2.18,2.18,pixel,1,,bitmap,True,True,109.5,Ultra-wide,812x373,328x600
+9,beijing_landsat.webp,2048,2650,0.77,0.77,pixel,1,,bitmap,True,True,1690.9,Portrait,464x600,676x600
+10,fig3_1_baseline_multiseed.png,2631,899,2.93,2.93,pixel,1,,bitmap,True,True,127.7,Ultra-wide,1160x396,1160x184
+11,fig3_2_spacetimeformer_ablation.png,2758,1116,2.47,2.47,pixel,1,,bitmap,True,True,145.3,Ultra-wide,812x329,328x600
+12,fig3_3_feature_ablation.png,2528,986,2.56,2.56,pixel,1,,bitmap,True,True,162.7,Ultra-wide,812x317,328x600
+13,fig3_4_multigraph_weights.png,1911,931,2.05,2.05,pixel,1,,bitmap,True,True,78.6,Ultra-wide,812x396,328x600
+14,fig4_1_fusion_selection.png,2791,910,3.07,3.07,pixel,1,,bitmap,True,True,131.8,Ultra-wide,1160x378,1160x202
+15,fig4_1_linear_horizon.png,2683,899,2.98,2.98,pixel,1,,bitmap,True,True,172.7,Ultra-wide,1160x389,1160x191
+16,fig4_2_linear_multiseed.png,2617,803,3.26,3.26,pixel,1,,bitmap,True,True,115.2,Ultra-wide,1160x356,1160x224
+17,fig5_1_ensemble_horizon.png,2683,921,2.91,2.91,pixel,1,,bitmap,True,True,209.4,Ultra-wide,1160x398,1160x182
+18,fig5_1_method_comparison.png,2879,957,3.01,3.01,pixel,1,,bitmap,True,True,151.4,Ultra-wide,1160x386,1160x194
+19,fig5_2_direction_heatmap.png,2305,811,2.84,2.84,pixel,1,,bitmap,True,True,94.8,Ultra-wide,1160x408,1160x172
+20,fig5_2_residual_quantiles.png,2001,998,2.01,2.01,pixel,1,,bitmap,True,True,133.3,Ultra-wide,812x405,328x600
+21,fig5_3_timestep_event.png,2835,957,2.96,2.96,pixel,1,,bitmap,True,True,122.2,Ultra-wide,1160x392,1160x188
+22,fig6_1_event_profile.png,2265,909,2.49,2.49,pixel,1,,bitmap,True,True,108.0,Ultra-wide,812x326,328x600
+23,fig6_1_final_model_selection.png,2793,1202,2.32,2.32,pixel,1,,bitmap,True,True,237.0,Ultra-wide,812x349,328x600
+24,fig6_2_event_duration.png,2131,968,2.20,2.20,pixel,1,,bitmap,True,True,72.0,Ultra-wide,812x369,328x600
+25,fig7_1_method_contribution.png,2659,860,3.09,3.09,pixel,1,,bitmap,True,True,129.9,Ultra-wide,1160x375,1160x205
+26,fig7_2_audit_sample.png,2615,955,2.74,2.74,pixel,1,,bitmap,True,True,149.2,Ultra-wide,1160x424,1160x156
+27,optuna_workflow.png,2354,903,2.61,2.61,pixel,1,,bitmap,True,True,146.9,Ultra-wide,812x311,328x600
+28,pipeline_stage_comparison.png,2000,901,2.22,2.22,pixel,1,,bitmap,True,True,61.4,Ultra-wide,812x366,328x600
+29,pipeline_time_memory.png,2485,882,2.82,2.82,pixel,1,,bitmap,True,True,89.6,Ultra-wide,1160x412,1160x168
+30,prediction_horizon_residual.png,2351,855,2.75,2.75,pixel,1,,bitmap,True,True,117.7,Ultra-wide,1160x422,1160x158
+31,prediction_temporal_spatial.png,2351,877,2.68,2.68,pixel,1,,bitmap,True,True,126.5,Ultra-wide,812x303,328x600
+32,shap_feature_importance.png,1601,1237,1.29,1.29,pixel,1,,bitmap,True,True,100.5,Standard landscape,777x600,363x600
+33,shap_group_importance.png,1601,967,1.66,1.66,pixel,1,,bitmap,True,True,67.2,Wide landscape,812x490,328x600
+34,week2_report_p1_0.png,596,842,0.71,0.71,manifest,1,,bitmap,True,True,24.2,Portrait,425x600,715x600
+35,week3_report_p1_0.png,596,842,0.71,0.71,manifest,1,,bitmap,True,True,24.2,Portrait,425x600,715x600
+36,week6_web_screenshot.png,483,579,0.83,0.83,pixel,1,,bitmap,True,True,584.2,Near square,501x600,639x600

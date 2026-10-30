@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#F26A2E" /></marker></defs>
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC" /></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="84" font-size="56" font-weight="700" fill="#103B5C">项目亮点、局限与下一步</text><text x="1165" y="64" font-size="16" fill="#526372">30</text><text x="55" y="145" font-size="36" fill="#17212B">最重要的成果，是把数据规则、实验公平性和工程部署连成可复现系统。</text></g>
+ <g id="pillars" font-family="Microsoft YaHei, Arial, sans-serif">
+  <g><text x="60" y="260" font-size="64" font-weight="700" fill="#2A7F9E">01</text><text x="60" y="312" font-size="34" font-weight="700" fill="#103B5C">数据可信</text><text font-size="18" fill="#526372" x="60" y="360">gap-aware、无泄漏、</text><text font-size="18" fill="#526372" x="60" y="390">41→33 维审计收敛</text></g>
+  <line x1="380" y1="230" x2="380" y2="420" stroke="#C9D5DF" />
+  <g><text x="430" y="260" font-size="64" font-weight="700" fill="#F26A2E">02</text><text x="430" y="312" font-size="34" font-weight="700" fill="#103B5C">模型可验证</text><text font-size="18" fill="#526372" x="430" y="360">双图 + 门控 + 残差，</text><text font-size="18" fill="#526372" x="430" y="390">严格消融与多 seed</text></g>
+  <line x1="790" y1="230" x2="790" y2="420" stroke="#C9D5DF" />
+  <g><text x="840" y="260" font-size="64" font-weight="700" fill="#2E7D5B">03</text><text x="840" y="312" font-size="34" font-weight="700" fill="#103B5C">系统可处置</text><text font-size="18" fill="#526372" x="840" y="360">三路异常融合进入</text><text font-size="18" fill="#526372" x="840" y="390">事件分类、地图与三级预警</text></g>
+ </g>
+ <g id="limits" font-family="Microsoft YaHei, Arial, sans-serif"><text x="60" y="490" font-size="34" font-weight="700" fill="#C97A11">边界</text><text x="170" y="490" font-size="18" fill="#526372">公开基准原型 · 弱标签评估 · 离线微批模拟 · 未接入新闻/活动真值</text><path d="M60 545H1170" stroke="#F26A2E" stroke-width="5" marker-end="url(#a)" /><text x="60" y="598" font-size="34" font-weight="700" fill="#103B5C">下一步</text><text x="225" y="598" font-size="18" fill="#526372">授权业务数据 → 人工事件标签 → 跨城市迁移 → Optuna → 并发流式部署</text></g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="60" y="670" font-size="16" fill="#526372">核心难点：时间缺口、空间映射、1024×48 注意力规模、无真异常标签、GPU/系统资源约束。</text></g>
+</svg>

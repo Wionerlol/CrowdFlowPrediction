@@ -1,0 +1,1 @@
+这一页是论文到项目的对应关系。STGCN 的价值是把图卷积放进时空模块，但我没有照搬时间卷积；Graph WaveNet 的价值是用节点嵌入补全未知依赖；Transformer 提供多头注意力、残差、归一化和前馈网络；Spacetimeformer 则作为更通用的挑战者，验证变量乘时间 token、local/global attention、encoder-decoder 和 cross-attention。项目 AGFormer 是这些机制面向本任务的组合实现，不宣称复现同名外部论文。

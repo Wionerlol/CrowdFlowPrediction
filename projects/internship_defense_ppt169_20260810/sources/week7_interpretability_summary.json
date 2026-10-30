@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "tag": "week7_interpretability_v1",
+  "generated_at": "2026-08-09T12:45:06+00:00",
+  "config_path": "configs/week7_interpretability.yaml",
+  "objective": "解释最终 AGFormer ensemble 的时间/空间关注、输入特征贡献，并为 Week5 异常事件生成外部证据候选原因",
+  "hypothesis": "最终模型主要依赖近期流量与周期时间信息，空间关系会集中于少量关键节点；高置信异常可由天气、节假日或时空形态证据提供可审计的候选解释",
+  "model": {
+    "checkpoint_tags": [
+      "agformer_gate_context_linear_seed42",
+      "agformer_gate_context_linear_seed7",
+      "agformer_gate_context_linear_seed21",
+      "agformer_gate_context_linear_seed123"
+    ],
+    "checkpoint_hashes": {
+      "agformer_gate_context_linear_seed42": {
+        "path": "outputs/checkpoints/agformer_gate_context_linear_seed42/best.pt",
+        "size_bytes": 4560059,
+        "sha256": "e406e31cf71bf8bdc6a93b1a5248bc9934ea0c181260f8e6e654322a423915ae"
+      },
+      "agformer_gate_context_linear_seed7": {
+        "path": "outputs/checkpoints/agformer_gate_context_linear_seed7/best.pt",
+        "size_bytes": 4560059,
+        "sha256": "a6c17eafbb096bfec06e5d0b2ab91c123d52c145c5f80222e5ec8cfee938837c"
+      },
+      "agformer_gate_context_linear_seed21": {
+        "path": "outputs/checkpoints/agformer_gate_context_linear_seed21/best.pt",
+        "size_bytes": 4560059,
+        "sha256": "0441cd144f99425aeee23adab372b60db0e430acb8e408933f13a19ecf62b755"
+      },
+      "agformer_gate_context_linear_seed123": {
+        "path": "outputs/checkpoints/agformer_gate_context_linear_seed123/best.pt",
+        "size_bytes": 4560059,
+        "sha256": "bca7450e010082b6335d0c98682f8943896fd2f9d887a7f0bcaf618cdecc688a"
+      }
+    },
+    "data_rules": {
+      "city": "bj",
+      "test_windows": 4022,
+      "T_in": 48,
+      "T_out": 48,
+      "F_in": 9,
+      "real_time_context": true,
+      "filter_gaps": true,
+      "static_features": "leakage_free_33d"
+    }
+  },
+  "attention": {
+    "checkpoint_count": 4,
+    "sample_window_indices": [
+      0,
+      1340,
+      2680,
+      4021
+    ],
+    "sample_target_timestamps": [
+      "2016-01-05T03:00:00",
+      "2016-02-06T11:00:00",
+      "2016-03-09T08:30:00",
+      "2016-04-08T16:30:00"
+    ],
+    "sampling_scope": "qualitative four-date sample, not a full-test attention estimate",
+    "attention_semantics": "head-averaged native temporal self-attention in the nonlinear Transformer-GCN branch",
+    "attention_coverage_warning": "The final checkpoint uses use_linear_output=true. Temporal attention and adaptive adjacency do not explain the parallel linear residual head and therefore do not represent the complete ensemble output.",
+    "spatial_semantics": "learned adaptive adjacency in the nonlinear branch only; predefined spatial GCN and the parallel linear residual head are separate",
+    "recent_steps": 6,
+    "recent_hours": 3.0,
+    "mean_recent_attention_mass": 0.1222548355577723,
+    "mean_temporal_attention_entropy": 0.9956224872851314,
+    "mean_adaptive_row_entropy": 0.7261250657519569,
+    "mean_adaptive_top_k_concentration": 0.22377636473979728
+  },
+  "shap": {
+    "target_semantics": "saved final AGFormer 4-seed ensemble h1 prediction, including the parallel linear residual head",
+    "surrogate_model": "ExtraTreesRegressor",
+    "split_semantics": "first 80% test-window indices fit; final 20% held out",
+    "train_rows": 23959,
+    "validation_rows": 6041,
+    "validation_r2": 0.9925671606577043,
+    "validation_mae_flow_units": 4.4380610780890635,
+    "explain_rows": 1000,
+    "feature_count": 136,
+    "feature_representation": {
+      "flow": "all 48 historical steps for inflow and outflow",
+      "calendar": "seven channels at the final context timestep only",
+      "static": "33 leakage-free node features"
+    },
+    "shap_method": "TreeSHAP on held-out surrogate rows",
+    "shap_base_value": 94.31125675610446,
+    "mean_additivity_abs_error": 4.127123811695936e-06,
+    "max_additivity_abs_error": 7.960122695749305e-05,
+    "interpretation_boundary": "SHAP explains the surrogate approximation of the ensemble, not a direct gradient through the four AGFormer checkpoints. Interpret only alongside fidelity."
+  },
+  "anomaly_causes": {
+    "event_count": 131,
+    "weather_coverage_rate": 1.0,
+    "holiday_event_count": 13,
+    "weekend_event_count": 19,
+    "makeup_workday_event_count": 3,
+    "external_events_configured": false,
+    "external_event_match_count": 0,
+    "weather_thresholds": {
+      "temperature_p05": -3.4,
+      "temperature_p95": 28.45,
+      "wind_p95": 14.6
+    },
+    "cause_semantics": "Ranked external/context evidence priorities, not calibrated probabilities or causal claims. Detector morphology remains a separate field. News is only used when an explicit external_events CSV is configured."
+  },
+  "environment": {
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "cpu_count": 24,
+    "torch": "2.11.0+cu128",
+    "shap": "0.52.0",
+    "dependencies": {
+      "numpy": "2.4.4",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.9.0",
+      "joblib": "1.5.3",
+      "matplotlib": "3.10.9",
+      "shap": "0.52.0",
+      "PyYAML": "6.0.3"
+    },
+    "device": "cuda",
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "allocated_peak_mib": 420.4970703125
+    },
+    "git_commit": "3c7e89715490325c4c8f96f3790c3000e97561ae",
+    "git_dirty": true
+  },
+  "inputs": {
+    "scores": {
+      "path": "outputs/week5_anomaly/scores.npz",
+      "size_bytes": 153792830,
+      "sha256": "88a92a1c460af374cc455f4f8ba2f59d24de4924e9844bd641ecc20bd17d1b29"
+    },
+    "taxibj": {
+      "path": "data/processed/taxibj_clean.npz",
+      "size_bytes": 69285630,
+      "sha256": "8c4b847cef86da7f110b6c89fb84e21fa6f67a3ee2854f29fc27988abdd910d4"
+    },
+    "static_features": {
+      "path": "data/processed/node_features_bj.npy",
+      "size_bytes": 168064,
+      "sha256": "93368e51188d6a59127019e979ddbbb3073f325b9e6b2a101ec3b72426b95820"
+    },
+    "spatial_graph": {
+      "path": "data/processed/graph_spatial_bj.pt",
+      "size_bytes": 158189,
+      "sha256": "e129fcc2ad698f56f6f8517e8c548df9454e75380d3235ddad525e7dd5f0868f"
+    },
+    "anomaly_events": {
+      "path": "outputs/week5_anomaly/events.csv",
+      "size_bytes": 79234,
+      "sha256": "003dd93043b7ad32118be9dc23dd409cc438899a034386fbb69cae0785085d77"
+    },
+    "weather": {
+      "path": "data/processed/weather_bj_merged.csv",
+      "size_bytes": 3677714,
+      "sha256": "6ab0c6929a436ec3ac5a63e505d2fe58cb5d0db062674d470a0ae3e4885afbc4"
+    },
+    "holidays": {
+      "path": "data/raw/taxibj/BJ_Holiday.txt",
+      "size_bytes": 1058,
+      "sha256": "8802a253b5215803ad109f4cf27ddcb2518d045997b71836e5c3256ad387396a"
+    }
+  },
+  "implementation": {
+    "src/interpretability/week7.py": {
+      "size_bytes": 55119,
+      "sha256": "38a47ec69b679e19a249c044f0a1006c13713b33cdceb13bce400d12e9d49133"
+    },
+    "scripts/run_week7_interpretability.py": {
+      "size_bytes": 1517,
+      "sha256": "5d922c103d7645ee71417e0fb2b500ca29d6f72dbcf8e1922b346b892d078c98"
+    },
+    "configs/week7_interpretability.yaml": {
+      "size_bytes": 2069,
+      "sha256": "50ef683c4f03550cb366fa35ab7c0d4d815e9046c8d0cebe4cacb3c939ddf7fc"
+    }
+  },
+  "outputs": {
+    "attention_temporal_matrix": "attention_temporal_matrix.csv",
+    "attention_last_query_by_lag": "attention_last_query_by_lag.csv",
+    "attention_node_summary": "attention_node_summary.csv",
+    "adaptive_top_edges": "adaptive_top_edges.csv",
+    "shap_feature_importance": "shap_feature_importance.csv",
+    "shap_group_importance": "shap_group_importance.csv",
+    "shap_surrogate_validation": "shap_surrogate_validation.csv",
+    "shap_values": "shap_values.npz",
+    "shap_surrogate": "shap_surrogate.joblib",
+    "anomaly_cause_analysis": "anomaly_cause_analysis.csv",
+    "anomaly_cause_summary": "anomaly_cause_summary.csv",
+    "figures": [
+      "attention_temporal_heatmap.png",
+      "attention_spatial_summary.png",
+      "shap_feature_importance.png",
+      "shap_group_importance.png",
+      "anomaly_cause_distribution.png",
+      "anomaly_weather_context.png"
+    ],
+    "report": "week7_interpretability_report.md",
+    "artifact_manifest": "artifact_manifest.json"
+  }
+}

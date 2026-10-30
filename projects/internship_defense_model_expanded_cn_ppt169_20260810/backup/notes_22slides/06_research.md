@@ -1,0 +1,1 @@
+我调研了图卷积、时空图网络、Transformer、自适应邻接、Spacetimeformer、VAE、异常 Transformer 和 SHAP。最终没有照搬单一论文，而是组合显式图先验、学习型邻接、时间注意力和三路异常证据。需要强调，项目中的 AGFormer 是自主组合实现，不把它描述成同名论文复现。下一页进入数据底座。

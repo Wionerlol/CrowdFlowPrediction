@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="74" font-size="48" font-weight="700" fill="#103B5C">最终不是四图全用，而是“空间先验 + 自适应图”</text><text x="1200" y="64" font-size="16" fill="#526372">13</text><text x="55" y="114" font-size="20" fill="#526372">候选图通过同窗消融竞争；边更多、语义更多并不自动带来更低预测误差。</text></g>
+ <g id="evidence" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="55" y="150" width="575" height="350" fill="#FFFFFF" stroke="#C9D5DF"/><text x="80" y="188" font-size="24" font-weight="700" fill="#103B5C">四图融合 checkpoint 学到了什么？</text><image href="../images/fig3_4_multigraph_weights.png" x="80" y="205" width="525" height="245" preserveAspectRatio="xMidYMid meet"/><text x="80" y="478" font-size="16" fill="#526372">Flow 92.18% · Spatial 7.37% · POI 0.42% · Transit 0.02%</text>
+  <rect x="655" y="150" width="570" height="350" fill="#FFFFFF" stroke="#C9D5DF"/><text x="680" y="188" font-size="24" font-weight="700" fill="#103B5C">为什么仍然拒绝多图？</text><text x="680" y="235" font-size="18" fill="#526372">单空间图 gated AGFormer</text><text x="1165" y="235" text-anchor="end" font-size="28" font-weight="700" fill="#2E7D5B">MAE 16.5350</text><line x1="680" y1="255" x2="1195" y2="255" stroke="#DDE5EC"/><text x="680" y="300" font-size="18" fill="#526372">四图全局权重融合</text><text x="1165" y="300" text-anchor="end" font-size="28" font-weight="700" fill="#C73E3A">MAE 16.9569</text><text x="680" y="345" font-size="18" fill="#C73E3A">误差增加 0.4219（约 +2.55%）</text><text x="680" y="390" font-size="17" fill="#526372">原因 1：单组全局 logits 不能适配不同节点/时段。</text><text x="680" y="420" font-size="17" fill="#526372">原因 2：流量图与强历史输入信息高度重叠。</text><text x="680" y="450" font-size="17" fill="#526372">原因 3：POI/轨道边稀疏，梯度容易被主导图淹没。</text>
+ </g>
+ <g id="final" font-family="Microsoft YaHei, Arial, sans-serif">
+  <rect x="55" y="530" width="1170" height="105" fill="#103B5C"/>
+  <text x="80" y="565" font-size="20" font-weight="700" fill="#FFFFFF">最终空间层</text>
+  <rect x="235" y="550" width="290" height="58" fill="#FFFFFF"/><text x="380" y="585" text-anchor="middle" font-size="18" font-weight="700" fill="#103B5C">预定义 G_spatial → DenseGCN</text>
+  <text x="555" y="588" font-size="34" fill="#F26A2E">+</text>
+  <rect x="600" y="550" width="400" height="58" fill="#FFFFFF"/><text x="800" y="575" text-anchor="middle" font-size="17" font-family="Consolas, Courier New, monospace" fill="#103B5C">A_adaptive = softmax(ReLU(E1E2ᵀ))</text><text x="800" y="598" text-anchor="middle" font-size="16" fill="#526372">节点嵌入学习非局部关系</text>
+  <text x="1030" y="588" font-size="34" fill="#F26A2E">→</text><text x="1080" y="585" font-size="20" font-weight="700" fill="#FFFFFF">相加 + ReLU</text>
+ </g>
+ <g id="footer" font-family="Microsoft YaHei, Arial, sans-serif"><text x="55" y="680" font-size="16" fill="#526372">因此“33维节点特征”与“图的边”是两条独立信息通道：前者描述节点是什么，后者规定消息从哪里传播。</text></g>
+</svg>

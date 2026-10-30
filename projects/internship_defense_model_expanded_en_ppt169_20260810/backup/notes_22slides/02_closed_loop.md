@@ -1,0 +1,1 @@
+This was not an isolated forecasting experiment. I built a reproducible chain across 1,024 spatial nodes, a 24-hour forecast horizon, three complementary anomaly branches, and an API and Web layer with tiered alerts. The next slide explains why the business problem naturally becomes three connected decisions.

@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "tag": "week7_final_system_evaluation_v1",
+  "generated_at": "2026-08-09T12:13:19+00:00",
+  "config_path": "configs/week7_evaluation.yaml",
+  "objective": "在固定 TaxiBJ 测试集上统一评估最终预测、异常检测与 Week6 服务性能",
+  "hypothesis": "最终 AGFormer 四 seed ensemble 与融合异常系统在保持现有数据规则时可复现既有质量指标，且单机 API 资源占用和响应延迟满足演示系统要求",
+  "data_rules": {
+    "city": "bj",
+    "test_windows": 4022,
+    "T_in": 48,
+    "T_out": 48,
+    "real_time_context": true,
+    "filter_gaps": true,
+    "prediction_selected_on": "validation",
+    "prediction_evaluated_on": "test",
+    "anomaly_reference": "weak_labels_only"
+  },
+  "environment": {
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "cpu_count": 24,
+    "memory_total_gib": 15.336082458496094,
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+      "memory_total_mib": 16303.0,
+      "driver": "610.62"
+    },
+    "git_commit": "3c7e89715490325c4c8f96f3790c3000e97561ae",
+    "git_dirty": true,
+    "dependencies": {
+      "numpy": "2.4.4",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.9.0",
+      "fastapi": "0.136.3",
+      "uvicorn": "0.49.0",
+      "psutil": "7.2.2",
+      "requests": "2.34.2",
+      "PyYAML": "6.0.3"
+    }
+  },
+  "prediction": {
+    "tag": "agformer_gate_context_linear_ensemble_4seed",
+    "members": [
+      "agformer_gate_context_linear_seed42",
+      "agformer_gate_context_linear_seed7",
+      "agformer_gate_context_linear_seed21",
+      "agformer_gate_context_linear_seed123"
+    ],
+    "test_windows": 4022,
+    "nodes": 1024,
+    "h1_recomputed": {
+      "MAE": 11.301942931368817,
+      "RMSE": 19.862082390804094,
+      "MAPE": 23.4912959973148,
+      "valid_count": 3900084
+    },
+    "h1_consistency_absolute_difference": {
+      "MAE": 1.0605143430097996e-07,
+      "RMSE": 8.630941330523001e-07,
+      "MAPE": 1.1364749568087973e-06
+    },
+    "residual_quantiles": {
+      "p50": 5.81976318359375,
+      "p90": 25.7481689453125,
+      "p95": 36.67791748046875,
+      "p99": 70.21131378173827
+    },
+    "residual_quantile_semantics": "unmasked_all_cells_including_zero_targets",
+    "worst_node_by_mae": 157,
+    "worst_slot_by_mae": 32
+  },
+  "anomaly": {
+    "test_windows": 4022,
+    "min_event_cells": 6,
+    "weak_label_warning": "TaxiBJ has no authoritative anomaly labels; all precision/recall/accuracy values are agreement with project weak-label references, not ground-truth accuracy.",
+    "weak_label_circularity_warning": "Weak labels are derived from the inflow statistical rule and the final fusion also includes the statistical detector (configured weight 0.70). These metrics therefore measure rule agreement, not independent anomaly quality.",
+    "event_direction_scope": {
+      "prediction": "bidirectional final fusion mask",
+      "reference": "high-inflow weak-label z-score footprint",
+      "full_fusion_event_count": 131,
+      "high_direction_fusion_event_count": 102
+    },
+    "fusion_positive_rate": 0.08801591248135256,
+    "weak_label_positive_rates": {
+      "level_A": 0.0668821481849826,
+      "level_B": 0.018896071606166086
+    }
+  },
+  "pipeline": {
+    "stage_duration_sum_seconds": 6.788122653961182,
+    "slowest_stage": "model_inference",
+    "slowest_stage_seconds": 2.571899175643921,
+    "actual_window_count": 24,
+    "pipeline_windows_per_second": 3.5355872637326162,
+    "model_inference_ms_per_window": 107.16246565183003,
+    "device": "cuda",
+    "time_range": {
+      "start": "2016-04-08T05:00:00",
+      "end": "2016-04-08T16:30:00"
+    }
+  },
+  "api": {
+    "resources": {
+      "server_command": [
+        "/home/louis/projects/DidiRemote/.venv/bin/python",
+        "scripts/run_week6_api.py",
+        "--config",
+        "configs/week6_web.yaml",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18080"
+      ],
+      "host": "127.0.0.1",
+      "port": 18080,
+      "startup_seconds": 0.6160885419812985,
+      "idle_rss_mib": 125.75,
+      "peak_rss_mib": 137.23046875,
+      "memory_samples": 923,
+      "benchmark_mode": "single_client_sequential_warm_server",
+      "warmups_per_endpoint": 2,
+      "measured_requests_per_endpoint": 100,
+      "wire_bytes_semantics": "HTTP response body bytes from Content-Length when present; headers excluded",
+      "server_log": "outputs/week7_evaluation/final_system_v1/api_server.log"
+    },
+    "endpoint_count": 6
+  },
+  "inputs": {
+    "prediction_ensemble_result": {
+      "path": "outputs/results/agformer_gate_context_linear_ensemble_4seed.json",
+      "size_bytes": 9274,
+      "sha256": "3f142199ee54123ebe13b59a18d4114894fa799beefd1f0e8b1b18a6bba8b9ef"
+    },
+    "anomaly_scores": {
+      "path": "outputs/week5_anomaly/scores.npz",
+      "size_bytes": 153792830,
+      "sha256": "88a92a1c460af374cc455f4f8ba2f59d24de4924e9844bd641ecc20bd17d1b29"
+    },
+    "pipeline_summary": {
+      "path": "outputs/week6_pipeline/realtime/summary.json",
+      "size_bytes": 5709,
+      "sha256": "164791b98e761e23179f3bcda4ee95ec4b1f6b2a57e3bf97f95b69f16c24e10d"
+    },
+    "web_config": {
+      "path": "configs/week6_web.yaml",
+      "size_bytes": 822,
+      "sha256": "961f91f4238d344bce7d878f1d6e5b9ad153d4355bf8f5a1273a38a28c555e2e"
+    },
+    "api_artifact_grid_meta": {
+      "path": "data/processed/grid_display_meta_bj.csv",
+      "size_bytes": 93484,
+      "sha256": "5f98e275c21d6c13a046a9410a44fde299dd76d23d4dee4aaec1fce18f1afef9"
+    },
+    "api_artifact_realtime_summary": {
+      "path": "outputs/week6_pipeline/realtime/summary.json",
+      "size_bytes": 5709,
+      "sha256": "164791b98e761e23179f3bcda4ee95ec4b1f6b2a57e3bf97f95b69f16c24e10d"
+    },
+    "api_artifact_realtime_scores": {
+      "path": "outputs/week6_pipeline/realtime/scores.npz",
+      "size_bytes": 787924,
+      "sha256": "fb23b7747bc8755464b1a8cc6a8a6b78d8c5d45e5d2c18c0daa185b79f1ed61a"
+    },
+    "api_artifact_forecast_24h": {
+      "path": "outputs/week6_pipeline/realtime/forecast_24h.npz",
+      "size_bytes": 180101,
+      "sha256": "30b554ebbfb08c138b733d40dba203ddda4529f7f2973e4213fb3a8b9f9f0be0"
+    },
+    "api_artifact_realtime_alerts": {
+      "path": "outputs/week6_pipeline/realtime/alerts.csv",
+      "size_bytes": 612,
+      "sha256": "d5806cef9c6b18b268a7dc059a3b002d8114a76b0055c2b3eda15fae31f945d4"
+    },
+    "api_artifact_historical_scores": {
+      "path": "outputs/week5_anomaly/scores.npz",
+      "size_bytes": 153792830,
+      "sha256": "88a92a1c460af374cc455f4f8ba2f59d24de4924e9844bd641ecc20bd17d1b29"
+    },
+    "api_artifact_historical_alerts": {
+      "path": "outputs/week6_alerts/alerts.csv",
+      "size_bytes": 116352,
+      "sha256": "b5f17ffe1ea6ba909a1d3518bea5b32be8e605bc52e8ede3b235f9e414a7b011"
+    }
+  },
+  "implementation": {
+    "src/evaluation/week7.py": {
+      "size_bytes": 43394,
+      "sha256": "c8fcd892c80ce6a02642ec778f5bdce13abf8d00c9ec3c1ff6469d92ef7386ff"
+    },
+    "scripts/evaluate_week7_system.py": {
+      "size_bytes": 1524,
+      "sha256": "8fa8789c1ac3ce2765c7845336fd754fd3802a370baa1b0fb152b59e2efeb9df"
+    },
+    "scripts/run_week6_api.py": {
+      "size_bytes": 1074,
+      "sha256": "effd30754d9df72f5d1b05a5bddf86921a7aef6386fe848a3a875de6e11db5d2"
+    },
+    "src/api/main.py": {
+      "size_bytes": 10189,
+      "sha256": "91ae5fb0547774ac8107da9a48612e829ec383616508c63329b688b3712a6d45"
+    },
+    "src/api/repository.py": {
+      "size_bytes": 20955,
+      "sha256": "430aac5365f6bce4e5c30d7c38b21797908d0c02fe089050034ca067ed4271df"
+    },
+    "src/api/schemas.py": {
+      "size_bytes": 1497,
+      "sha256": "411915148593224b009c5b58383b0270969a597b24c4162c6698fcea1d5cc85f"
+    },
+    "configs/week7_evaluation.yaml": {
+      "size_bytes": 2343,
+      "sha256": "8ef63b83d8a16b65a9eca792b0441ae03dcec1f407181340eedda0a26f330857"
+    }
+  },
+  "outputs": {
+    "prediction_metrics_by_horizon": "prediction_metrics_by_horizon.csv",
+    "prediction_h1_by_node": "prediction_h1_by_node.csv",
+    "prediction_h1_by_time_slot": "prediction_h1_by_time_slot.csv",
+    "anomaly_timestep_metrics": "anomaly_timestep_metrics.csv",
+    "anomaly_event_metrics": "anomaly_event_metrics.csv",
+    "pipeline_stage_timings": "pipeline_stage_timings.csv",
+    "api_benchmark": "api_benchmark.csv",
+    "report": "week7_system_evaluation_report.md"
+  }
+}

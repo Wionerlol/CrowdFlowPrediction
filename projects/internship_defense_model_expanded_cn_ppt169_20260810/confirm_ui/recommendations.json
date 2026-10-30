@@ -1,0 +1,39 @@
+{
+  "stage": "stage1",
+  "lang": "zh",
+  "recommend": {
+    "canvas": "ppt169",
+    "mode": "narrative",
+    "visual_style": "data-journalism",
+    "delivery_purpose": "presentation"
+  },
+  "audience": {
+    "value": "学校实习答辩老师；需要在有限时间内同时判断工作量、技术深度、结果可信度和工程完成度"
+  },
+  "content_divergence": {
+    "value": ""
+  },
+  "visual_style_spectrum": [
+    {
+      "id": "data-journalism",
+      "tag_zh": "稳妥清晰",
+      "tag_en": "Clear and evidence-led",
+      "note_zh": "像数据新闻专题或研究机构成果汇报，指标与图表最易阅读",
+      "note_en": "Like an evidence-led research feature with highly readable charts"
+    },
+    {
+      "id": "dark-tech",
+      "tag_zh": "科技演示",
+      "tag_en": "Technical showcase",
+      "note_zh": "像 AI 产品发布与数据平台演示，系统功能更有冲击力",
+      "note_en": "Like an AI product launch and data-platform showcase"
+    },
+    {
+      "id": "blueprint",
+      "tag_zh": "工程蓝图",
+      "tag_en": "Engineering blueprint",
+      "note_zh": "像系统架构评审，突出数据管道、图结构和端到端工程链路",
+      "note_en": "Like a systems architecture review focused on technical construction"
+    }
+  ]
+}

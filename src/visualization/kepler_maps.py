@@ -141,6 +141,7 @@ def event_map_html(events: list[dict[str, Any]], *, height: int = 520) -> str:
                                 {"name": "alert_level_zh", "format": None},
                                 {"name": "start_time", "format": None},
                                 {"name": "max_score", "format": ".3f"},
+                                {"name": "coordinate_source", "format": None},
                             ]
                         },
                     }

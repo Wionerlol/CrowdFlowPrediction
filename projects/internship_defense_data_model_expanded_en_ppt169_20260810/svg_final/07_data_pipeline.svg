@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Arial, Microsoft YaHei, sans-serif"><text x="55" y="78" font-size="52" font-weight="700" fill="#103B5C">From Raw Flow to a Training Tensor</text><text x="1200" y="64" font-size="16" fill="#526372">07</text><text x="55" y="122" font-size="22" fill="#526372">Time, space and data types are standardized before external context enters the node–time coordinate system.</text></g>
+ <g id="pipeline" font-family="Arial, Microsoft YaHei, sans-serif">
+  <line x1="170" y1="300" x2="1085" y2="300" stroke="#C9D5DF" stroke-width="5"/>
+  <g id="stage1"><circle cx="170" cy="300" r="58" fill="#103B5C"/><!-- icon: tabler-outline/database -->
+  <g transform="translate(142, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0" />
+    <path d="M4 6v6a8 3 0 0 0 16 0v-6" />
+    <path d="M4 12v6a8 3 0 0 0 16 0v-6" />
+  </g><text x="85" y="405" font-size="26" font-weight="700" fill="#103B5C">01 Ingest</text><text x="85" y="440" font-size="18" fill="#526372">14 time segments</text><text x="85" y="468" font-size="18" fill="#526372">inflow / outflow channels</text></g>
+  <g id="stage2"><circle cx="475" cy="300" r="58" fill="#2A7F9E"/><!-- icon: tabler-outline/calendar -->
+  <g transform="translate(447, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+    <path d="M16 3v4" />
+    <path d="M8 3v4" />
+    <path d="M4 11h16" />
+    <path d="M11 15h1" />
+    <path d="M12 15v3" />
+  </g><text x="390" y="405" font-size="26" font-weight="700" fill="#103B5C">02 Normalize time</text><text x="390" y="440" font-size="18" fill="#526372">local slots → UTC</text><text x="390" y="468" font-size="18" fill="#526372">deduplicate; retain real gaps</text></g>
+  <g id="stage3"><circle cx="780" cy="300" r="58" fill="#F26A2E"/><!-- icon: tabler-outline/shield-check -->
+  <g transform="translate(752, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06" />
+    <path d="M15 19l2 2l4 -4" />
+  </g><text x="695" y="405" font-size="26" font-weight="700" fill="#103B5C">03 Quality gates</text><text x="695" y="440" font-size="18" fill="#526372">NaN / duplicates / range</text><text x="695" y="468" font-size="18" fill="#526372">30-minute continuity audit</text></g>
+  <g id="stage4"><circle cx="1085" cy="300" r="58" fill="#2E7D5B"/><!-- icon: tabler-outline/stack -->
+  <g transform="translate(1057, 272) scale(2.33333)" fill="none" stroke="#FFFFFF" stroke-width="2">
+    <path d="M12 6l-8 4l8 4l8 -4l-8 -4" />
+    <path d="M4 14l8 4l8 -4" />
+  </g><text x="995" y="405" font-size="26" font-weight="700" fill="#103B5C">04 Publish</text><text x="995" y="440" font-size="18" fill="#526372">float32 + datetime64</text><text x="995" y="468" font-size="18" fill="#526372">compressed NPZ + metadata</text></g>
+ </g>
+ <g id="facts" font-family="Arial, Microsoft YaHei, sans-serif">
+  <rect x="55" y="535" width="350" height="105" fill="#FFFFFF" stroke="#C9D5DF"/><text x="80" y="573" font-size="18" fill="#526372">Standard flow tensor</text><text x="80" y="615" font-size="28" font-weight="700" fill="#103B5C">22,484 × 2 × 32 × 32</text>
+  <rect x="430" y="535" width="300" height="105" fill="#FFFFFF" stroke="#C9D5DF"/><text x="455" y="573" font-size="18" fill="#526372">Temporal resolution</text><text x="455" y="615" font-size="34" font-weight="700" fill="#F26A2E">30 minutes</text>
+  <rect x="755" y="535" width="470" height="105" fill="#103B5C"/><text x="780" y="573" font-size="18" fill="#EAF0F5">Common training coordinates</text><text x="780" y="612" font-size="24" font-weight="700" fill="#FFFFFF">timestamp × node_id × channel</text>
+ </g>
+ <g id="footer" font-family="Arial, Microsoft YaHei, sans-serif"><text x="55" y="684" font-size="16" fill="#526372">The presentation uses anonymized city grids; the same schema and processing contract support transfer to an authorized business environment.</text></g>
+</svg>

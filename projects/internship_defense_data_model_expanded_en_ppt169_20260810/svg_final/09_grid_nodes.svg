@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+ <g id="background"><rect width="1280" height="720" fill="#F7FAFC"/></g>
+ <g id="header" font-family="Arial, Microsoft YaHei, sans-serif"><text x="55" y="76" font-size="48" font-weight="700" fill="#103B5C">From Grid Cells to Graph Nodes</text><text x="1200" y="64" font-size="16" fill="#526372">09</text><text x="55" y="118" font-size="21" fill="#526372">Each node binds one fixed grid cell to its flow series, static semantics and graph neighborhood.</text></g>
+ <g id="grid" font-family="Arial, Microsoft YaHei, sans-serif">
+  <rect x="55" y="155" width="500" height="430" fill="#FFFFFF" stroke="#C9D5DF"/>
+  <text x="80" y="195" font-size="24" font-weight="700" fill="#103B5C">32 × 32 grid → 1,024 nodes</text>
+  <g stroke="#DDE5EC" stroke-width="1" fill="none"><path d="M105 235H505M105 285H505M105 335H505M105 385H505M105 435H505M105 485H505M105 535H505"/><path d="M105 235V535M155 235V535M205 235V535M255 235V535M305 235V535M355 235V535M405 235V535M455 235V535M505 235V535"/></g>
+  <rect x="255" y="335" width="50" height="50" fill="#F26A2E"/><text x="280" y="367" text-anchor="middle" font-size="17" font-weight="700" fill="#FFFFFF">node</text>
+  <path d="M80 235L80 535" stroke="#2A7F9E" stroke-width="3"/><path d="M72 255L80 235L88 255" fill="none" stroke="#2A7F9E" stroke-width="3"/><text x="65" y="390" transform="rotate(-90 65 390)" font-size="16" fill="#526372">row: north → south</text>
+  <path d="M105 560L505 560" stroke="#2A7F9E" stroke-width="3"/><path d="M485 552L505 560L485 568" fill="none" stroke="#2A7F9E" stroke-width="3"/><text x="305" y="583" text-anchor="middle" font-size="16" fill="#526372">column: west → east</text>
+ </g>
+ <g id="mapping" font-family="Arial, Microsoft YaHei, sans-serif">
+  <rect x="600" y="155" width="625" height="120" fill="#103B5C"/><text x="630" y="198" font-size="22" fill="#EAF0F5">Stable indexing rule</text><text x="630" y="245" font-size="34" font-family="Consolas, Courier New, monospace" fill="#FFFFFF">node_id = row × 32 + col</text>
+  <rect x="600" y="300" width="295" height="185" fill="#FFFFFF" stroke="#C9D5DF"/><text x="625" y="338" font-size="24" font-weight="700" fill="#103B5C">Dynamic node value</text><text x="625" y="375" font-size="18" fill="#526372">Every 30 minutes:</text><text x="625" y="405" font-size="20" fill="#17212B">inflow, outflow</text><text x="625" y="445" font-size="18" fill="#526372">shape: (T, N, 2)</text>
+  <rect x="930" y="300" width="295" height="185" fill="#FFFFFF" stroke="#C9D5DF"/><text x="955" y="338" font-size="24" font-weight="700" fill="#103B5C">Static node value</text><text x="955" y="375" font-size="18" fill="#526372">Aggregated by grid_id:</text><text x="955" y="405" font-size="20" fill="#17212B">roads, POI, transit, EO</text><text x="955" y="445" font-size="18" fill="#526372">shape: (N, F_static)</text>
+  <rect x="600" y="510" width="625" height="75" fill="#EAF0F5"/><text x="625" y="541" font-size="18" font-weight="700" fill="#103B5C">Spatial scale:</text><text x="785" y="541" font-size="18" fill="#17212B">about 1.33 × 1.73 km; 2.32 km² per cell.</text><text x="625" y="570" font-size="16" fill="#526372">centers and bounds live in grid_meta; graph convolution uses node topology.</text>
+ </g>
+ <g id="caveat" font-family="Arial, Microsoft YaHei, sans-serif"><rect x="55" y="615" width="1170" height="58" fill="#EAF0F5"/><text x="80" y="651" font-size="18" fill="#C97A11">Coordinate boundary:</text><text x="290" y="651" font-size="17" fill="#17212B">Web calibration shifts display coordinates only; IDs and topology stay fixed, while geographic precision still depends on grid_meta.</text></g>
+</svg>
